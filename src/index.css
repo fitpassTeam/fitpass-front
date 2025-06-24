@@ -1,1 +1,10 @@
 @import 'tailwindcss';
+
+@keyframes fadeInOut {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.animate-fadeInOut {
+  animation: fadeInOut 2.5s ease-in-out infinite;
+}

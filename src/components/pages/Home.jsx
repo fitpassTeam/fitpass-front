@@ -4,6 +4,7 @@ import { getGyms, getSearchGyms, toggleLikeGym } from '../../api/gyms';
 import SearchBar from '../SearchBar';
 import { FaHeart, FaRegHeart } from 'react-icons/fa';
 import gymImg from '../../assets/헬스장.png';
+import '../../index.css'; // Tailwind custom keyframes 적용을 위해
 
 function formatTime(timeStr) {
     // '06:00:00' -> '06:00'
@@ -34,6 +35,10 @@ function Home() {
     const totalPages = data?.totalPages || 1;
 
     const handleLike = async (gymId) => {
+        if (!isLoggedIn) {
+            alert('로그인해야 가능합니다.');
+            return;
+        }
         try {
             await toggleLikeGym(gymId);
             queryClient.invalidateQueries(['gyms']);

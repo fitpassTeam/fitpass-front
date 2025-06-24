@@ -90,6 +90,12 @@ export default function Header() {
           )}
         </div>
       </div>
+      {/* 응원 문구 */}
+      <div className="flex justify-center mt-2 mb-2">
+        <span className="text-xl sm:text-2xl font-bold font-[cursive] bg-gradient-to-r from-blue-400 via-pink-400 to-purple-400 bg-clip-text text-transparent animate-fadeInOut">
+          오늘도 힘내! 너의 운동을 응원해!
+        </span>
+      </div>
     </header>
   );
 }
