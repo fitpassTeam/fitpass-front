@@ -10,6 +10,7 @@ import Home from './components/pages/Home';
 import Login from './components/pages/Login';
 import Signup from './components/pages/Signup';
 import SocialLogin from './components/pages/SocialLogin';
+import Welcome from './components/pages/Welcome';
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,10 @@ const router = createBrowserRouter([
     children: [
       {
         path: '',
+        element: <Welcome />,
+      },
+      {
+        path: 'home',
         element: <Home />,
       },
       {
