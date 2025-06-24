@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { loginUser } from '../../api/login';
+import { socialLogin } from '../../api-config';
 
 function Login() {
     const [form, setForm] = useState({
@@ -71,6 +72,13 @@ function Login() {
                     {mutation.isLoading ? '로그인 중...' : '로그인'}
                 </button>
             </form>
+            <button
+                type="button"
+                className="w-full mt-4 bg-green-500 hover:bg-green-600 text-white py-2 rounded font-bold text-lg"
+                onClick={() => socialLogin('naver')}
+            >
+                네이버 로그인
+            </button>
         </div>
     );
 }

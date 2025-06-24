@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Home from './components/pages/Home';
 import Login from './components/pages/Login';
 import Signup from './components/pages/Signup';
+import SocialLogin from './components/pages/SocialLogin';
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,10 @@ const router = createBrowserRouter([
       {
         path: 'signup',
         element: <Signup />,
+      },
+      {
+        path: 'sociallogin',
+        element: <SocialLogin />,
       },
       // {
       //   path: '/fitness-goals/{fitnessGoalId}/daily-records',
