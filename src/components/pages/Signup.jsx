@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { signupUser } from '../../api/signup';
+import logo from '../../assets/logo.jpg';
 
 function Signup() {
     const [form, setForm] = useState({
@@ -65,16 +66,19 @@ function Signup() {
     };
 
     return (
-        <div className="max-w-md mx-auto bg-white p-8 rounded shadow">
-            <h1 className="text-2xl font-bold mb-6 text-center">회원가입</h1>
-            <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="max-w-md mx-auto bg-white/90 p-10 rounded-2xl shadow-2xl mt-12 flex flex-col items-center">
+            <img src={logo} alt="logo" className="w-16 h-16 mb-4 rounded-full shadow" />
+            <h1 className="text-3xl font-extrabold mb-6 text-center bg-gradient-to-r from-blue-500 to-purple-500 text-transparent bg-clip-text drop-shadow">
+                회원가입
+            </h1>
+            <form onSubmit={handleSubmit} className="space-y-5 w-full">
                 <input
                     type="email"
                     name="email"
                     placeholder="이메일"
                     value={form.email}
                     onChange={handleChange}
-                    className="w-full border rounded px-3 py-2"
+                    className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 transition-all outline-none"
                     required
                 />
                 <input
@@ -83,7 +87,7 @@ function Signup() {
                     placeholder="비밀번호"
                     value={form.password}
                     onChange={handleChange}
-                    className="w-full border rounded px-3 py-2"
+                    className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 transition-all outline-none"
                     required
                 />
                 {errors.password && <div className="text-red-500 text-sm">{errors.password}</div>}
@@ -93,7 +97,7 @@ function Signup() {
                     placeholder="이름"
                     value={form.name}
                     onChange={handleChange}
-                    className="w-full border rounded px-3 py-2"
+                    className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 transition-all outline-none"
                     required
                 />
                 <input
@@ -102,7 +106,7 @@ function Signup() {
                     placeholder="010-1234-5678"
                     value={form.phone}
                     onChange={handleChange}
-                    className="w-full border rounded px-3 py-2"
+                    className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 transition-all outline-none"
                     required
                 />
                 {errors.phone && <div className="text-red-500 text-sm">{errors.phone}</div>}
@@ -112,7 +116,7 @@ function Signup() {
                     placeholder="나이"
                     value={form.age}
                     onChange={handleChange}
-                    className="w-full border rounded px-3 py-2"
+                    className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 transition-all outline-none"
                     min="0"
                     required
                 />
@@ -123,14 +127,14 @@ function Signup() {
                     placeholder="주소"
                     value={form.address}
                     onChange={handleChange}
-                    className="w-full border rounded px-3 py-2"
+                    className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 transition-all outline-none"
                     required
                 />
                 <select
                     name="gender"
                     value={form.gender}
                     onChange={handleChange}
-                    className="w-full border rounded px-3 py-2"
+                    className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 transition-all outline-none"
                     required
                 >
                     <option value="">성별 선택</option>
@@ -140,19 +144,19 @@ function Signup() {
                 </select>
                 <button
                     type="submit"
-                    className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+                    className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 rounded-lg font-bold text-lg shadow hover:from-pink-500 hover:to-blue-500 transition-all"
                     disabled={mutation.isLoading}
                 >
                     {mutation.isLoading ? '회원가입 중...' : '회원가입'}
                 </button>
             </form>
             {showModal && (
-                <div className="fixed inset-0 flex items-center justify-center bg-white z-50">
-                    <div className="bg-white p-8 rounded shadow text-center">
-                        <h2 className="text-xl font-bold mb-4">회원가입이 완료되었습니다!</h2>
+                <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+                    <div className="bg-white p-8 rounded-2xl shadow text-center">
+                        <h2 className="text-2xl font-bold mb-4 text-blue-600">회원가입이 완료되었습니다!</h2>
                         <button
                             onClick={handleModalClose}
-                            className="mt-4 bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
+                            className="mt-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-8 py-3 rounded-full font-bold shadow hover:from-pink-500 hover:to-blue-500 transition-all"
                         >
                             확인
                         </button>
