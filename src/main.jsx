@@ -11,6 +11,10 @@ import Login from './components/pages/Login';
 import Signup from './components/pages/Signup';
 import SocialLogin from './components/pages/SocialLogin';
 import Welcome from './components/pages/Welcome';
+import MyPage from './components/pages/MyPage';
+import GymRegister from './components/pages/GymRegister';
+import PasswordCheckPage from './components/pages/PasswordCheckPage';
+import EditProfilePage from './components/pages/EditProfilePage';
 
 const queryClient = new QueryClient();
 
@@ -38,6 +42,22 @@ const router = createBrowserRouter([
       {
         path: 'sociallogin',
         element: <SocialLogin />,
+      },
+      {
+        path: 'mypage',
+        element: <MyPage />,
+      },
+      {
+        path: 'gymregister',
+        element: <GymRegister />,
+      },
+      {
+        path: 'check-password',
+        element: <PasswordCheckPage />,
+      },
+      {
+        path: 'edit-profile',
+        element: <EditProfilePage />,
       },
       // {
       //   path: '/fitness-goals/{fitnessGoalId}/daily-records',
