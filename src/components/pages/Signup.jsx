@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { signupUser } from '../../api/signup';
 import logo from '../../assets/logo.jpg';
+import addressData from '../../assets/addressData';
+import Select from 'react-select';
 
 function Signup() {
     const [form, setForm] = useState({
@@ -11,7 +13,9 @@ function Signup() {
         name: '',
         phone: '',
         age: '',
-        address: '',
+        city: '',
+        district: '',
+        detailAddress: '',
         gender: '',
     });
     const [errors, setErrors] = useState({});
@@ -32,6 +36,15 @@ function Signup() {
         if (form.age === '' || isNaN(form.age) || Number(form.age) < 0) {
             newErrors.age = '나이는 0살 이상이어야 합니다.';
         }
+        if (!form.city) {
+            newErrors.city = '시/도를 선택해 주세요.';
+        }
+        if (!form.district) {
+            newErrors.district = '시/군/구를 선택해 주세요.';
+        }
+        if (!form.detailAddress) {
+            newErrors.detailAddress = '상세주소를 입력해 주세요.';
+        }
         return newErrors;
     };
 
@@ -40,9 +53,20 @@ function Signup() {
         setForm(prev => ({ ...prev, [name]: value }));
     };
 
+    // react-select용 옵션 변환
+    const cityOptions = Object.keys(addressData).map(city => ({ value: city, label: city }));
+    const districtOptions = form.city ? addressData[form.city].map(d => ({ value: d, label: d })) : [];
+
     // React Query mutation
     const mutation = useMutation({
-        mutationFn: (formData) => signupUser({ ...formData, userRole: 'USER' }),
+        mutationFn: (formData) => {
+            const { city, district, detailAddress, ...rest } = formData;
+            return signupUser({
+                ...rest,
+                address: `${city} ${district} ${detailAddress}`.trim(),
+                userRole: 'USER'
+            });
+        },
         onSuccess: () => {
             setShowModal(true);
         },
@@ -121,20 +145,44 @@ function Signup() {
                     required
                 />
                 {errors.age && <div className="text-red-500 text-sm">{errors.age}</div>}
+                <div className="flex gap-2">
+                  <div className="w-1/2">
+                    <Select
+                      options={cityOptions}
+                      value={cityOptions.find(opt => opt.value === form.city) || null}
+                      onChange={option => setForm(prev => ({ ...prev, city: option.value, district: '' }))}
+                      placeholder="시/도 선택"
+                      isClearable
+                    />
+                  </div>
+                  <div className="w-1/2">
+                    <Select
+                      options={districtOptions}
+                      value={districtOptions.find(opt => opt.value === form.district) || null}
+                      onChange={option => setForm(prev => ({ ...prev, district: option ? option.value : '' }))}
+                      placeholder="시/군/구 선택"
+                      isDisabled={!form.city}
+                      isClearable
+                    />
+                  </div>
+                </div>
+                {errors.city && <div className="text-red-500 text-sm">{errors.city}</div>}
+                {errors.district && <div className="text-red-500 text-sm">{errors.district}</div>}
                 <input
-                    type="text"
-                    name="address"
-                    placeholder="주소"
-                    value={form.address}
-                    onChange={handleChange}
-                    className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 transition-all outline-none"
-                    required
+                  type="text"
+                  name="detailAddress"
+                  placeholder="상세주소"
+                  value={form.detailAddress}
+                  onChange={handleChange}
+                  className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 outline-none"
+                  required
                 />
+                {errors.detailAddress && <div className="text-red-500 text-sm">{errors.detailAddress}</div>}
                 <select
                     name="gender"
                     value={form.gender}
                     onChange={handleChange}
-                    className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 transition-all outline-none"
+                    className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 outline-none"
                     required
                 >
                     <option value="">성별 선택</option>
