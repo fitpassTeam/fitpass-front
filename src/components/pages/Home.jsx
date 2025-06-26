@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getGyms, getSearchGyms, toggleLikeGym } from '../../api/gyms';
 import SearchBar from '../SearchBar';
 import { FaHeart, FaRegHeart } from 'react-icons/fa';
 import '../../index.css'; // Tailwind custom keyframes 적용을 위해
+import addressData from '../../assets/addressData';
+import { useNavigate } from 'react-router-dom';
 
 function formatTime(timeStr) {
     // '06:00:00' -> '06:00'
@@ -12,26 +14,55 @@ function formatTime(timeStr) {
 }
 
 function Home() {
+    // draft 상태: 입력값만 관리
+    // const [draftSearchText, setDraftSearchText] = useState('');
+    const [draftCity, setDraftCity] = useState('');
+    const [draftDistrict, setDraftDistrict] = useState('');
+    // 실제 검색에 사용되는 상태
     const [searchText, setSearchText] = useState('');
+    const [selectedCity, setSelectedCity] = useState('');
+    const [selectedDistrict, setSelectedDistrict] = useState('');
     const [page, setPage] = useState(0);
     const queryClient = useQueryClient();
     const isLoggedIn = !!localStorage.getItem('token');
+    const navigate = useNavigate();
 
+    // 드롭다운 데이터
+    const cities = Object.keys(addressData);
+    const districts = draftCity ? addressData[draftCity] : [];
+
+    // 검색 파라미터
+    const searchParams = useMemo(() => ({
+        page,
+        size: 10,
+        keyword: searchText ? searchText : undefined,
+        city: selectedCity ? selectedCity : undefined,
+        district: selectedDistrict ? selectedDistrict : undefined,
+    }), [page, searchText, selectedCity, selectedDistrict]);
+    const isSearch = useMemo(() => !!(searchParams.keyword || searchParams.city || searchParams.district), [searchParams]);
+
+    // 검색/전체 API 분기
     const { data, isLoading, isError } = useQuery({
-        queryKey: ['gyms', { page, searchText }],
+        queryKey: ['gyms', JSON.stringify(searchParams), isSearch],
         queryFn: () => {
-            if (searchText) {
-                return getSearchGyms({ page, size: 10, searchText }).then(res => res.data.data);
+            if (isSearch) {
+                return getSearchGyms(searchParams).then(res => res.data.data);
             } else {
-                // searchText 파라미터를 undefined로 보내서 불필요한 빈값 전달 방지
-                return getGyms({ page, size: 10, searchText: undefined }).then(res => res.data.data);
+                return getGyms({ page, size: 10 }).then(res => res.data.data);
             }
         },
         keepPreviousData: true,
     });
 
-    const gyms = data?.content || [];
-    const totalPages = data?.totalPages || 1;
+    let gyms = [];
+    let totalPages = 1;
+    if (data?.data?.content) {
+      gyms = data.data.content;
+      totalPages = data.data.totalPages || 1;
+    } else if (data?.content) {
+      gyms = data.content;
+      totalPages = data.totalPages || 1;
+    }
 
     // 실시간 인기 검색어(임시 데이터, 실제 API 연동 가능)
     const [hotGyms] = useState([
@@ -43,7 +74,7 @@ function Home() {
     ]);
     // 애니메이션 효과를 위한 인덱스
     const [highlightIdx, setHighlightIdx] = useState(0);
-    useEffect(() => {
+    React.useEffect(() => {
         const interval = setInterval(() => {
             setHighlightIdx(idx => (idx + 1) % hotGyms.length);
         }, 1800);
@@ -63,18 +94,64 @@ function Home() {
         }
     };
 
+    // 검색 버튼 클릭 시에만 실제 검색 실행
+    const handleSearch = (val, city, district) => {
+        setSearchText(val !== undefined ? val : searchText);
+        setSelectedCity(city !== undefined ? city : selectedCity);
+        setSelectedDistrict(district !== undefined ? district : selectedDistrict);
+        setPage(0);
+    };
+    // 드롭다운/검색바는 draft만 변경
+    const handleCityChange = (e) => {
+        const city = e.target.value;
+        setDraftCity(city);
+        setDraftDistrict('');
+        setSelectedCity(city);
+        setSelectedDistrict('');
+        setPage(0);
+    };
+    const handleDistrictChange = (e) => {
+        const district = e.target.value;
+        setDraftDistrict(district);
+        setSelectedDistrict(district);
+        setPage(0);
+    };
+
+    // 렌더링/디버깅용 콘솔
+    console.log('gyms:', gyms, 'searchParams:', searchParams);
+
     return (
         <div className="max-w-7xl mx-auto px-2 py-8">
-            {/* 검색바 */}
+            {/* 검색바 + 주소 드롭다운 */}
             <div className="flex justify-center mb-8">
-                <div className="w-full max-w-2xl">
+                <div className="w-full max-w-2xl flex gap-2 items-center">
                     <SearchBar
                         searchText={searchText}
-                        onSearch={val => {
-                            setSearchText(val);
-                            setPage(0);
-                        }}
+                        onSearch={val => handleSearch(val, draftCity, draftDistrict)}
                     />
+                    <select
+                        name="city"
+                        value={draftCity}
+                        onChange={handleCityChange}
+                        className="border-2 border-blue-200 focus:border-blue-500 rounded-lg px-3 py-2 outline-none min-w-[120px]"
+                    >
+                        <option value="">시/도</option>
+                        {cities.map(city => (
+                            <option key={city} value={city}>{city}</option>
+                        ))}
+                    </select>
+                    <select
+                        name="district"
+                        value={draftDistrict}
+                        onChange={handleDistrictChange}
+                        className="border-2 border-blue-200 focus:border-blue-500 rounded-lg px-3 py-2 outline-none min-w-[120px]"
+                        disabled={!draftCity}
+                    >
+                        <option value="">시/군/구</option>
+                        {districts.map(district => (
+                            <option key={district} value={district}>{district}</option>
+                        ))}
+                    </select>
                 </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -86,20 +163,20 @@ function Home() {
                                 <span className="text-2xl font-bold">로딩 중...</span>
                             </div>
                         )}
-                        {isError && (
+                        {isError ? (
                             <div className="col-span-2 flex flex-col items-center py-16 text-red-400">
                                 <span className="text-2xl font-bold">에러가 발생했습니다.</span>
                             </div>
-                        )}
-                        {gyms.length === 0 && !isLoading && (
+                        ) : gyms.length === 0 && !isLoading ? (
                             <div className="col-span-2 flex flex-col items-center py-16 text-gray-400">
                                 <span className="text-2xl font-bold">체육관이 없습니다.</span>
                             </div>
-                        )}
+                        ) : null}
                         {gyms.map(gym => (
                             <div
                                 key={gym.gymId}
-                                className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow p-4 flex gap-4 items-center relative group"
+                                className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow p-4 flex gap-4 items-center relative group cursor-pointer"
+                                onClick={() => navigate(`/gyms/${gym.gymId}`)}
                             >
                                 <div className="flex-shrink-0 w-20 h-20 bg-gray-100 flex items-center justify-center overflow-hidden rounded-xl border">
                                     {gym.gymImage && gym.gymImage.length > 0 ? (
@@ -111,7 +188,7 @@ function Home() {
                                 <div className="flex-1 min-w-0">
                                     <div className="text-lg font-bold truncate">{gym.name}</div>
                                     <div className="text-gray-600 text-sm truncate">{gym.address}</div>
-                                    <div className="text-xs text-gray-500 truncate">{gym.content}</div>
+                                    <div className="text-xs text-gray-500 truncate">{gym.summary}</div>
                                     <div className="text-xs text-gray-500 mt-1">
                                         운영시간: {formatTime(gym.openTime)} ~ {formatTime(gym.closeTime)}
                                     </div>

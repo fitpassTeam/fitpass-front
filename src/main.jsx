@@ -15,6 +15,8 @@ import MyPage from './components/pages/MyPage';
 import GymRegister from './components/pages/GymRegister';
 import PasswordCheckPage from './components/pages/PasswordCheckPage';
 import EditProfilePage from './components/pages/EditProfilePage';
+import GymDetail from './components/pages/GymDetail';
+import TrainerRegister from './components/pages/TrainerRegister';
 
 const queryClient = new QueryClient();
 
@@ -23,42 +25,18 @@ const router = createBrowserRouter([
     path: '/',
     element: <App />,
     children: [
-      {
-        path: '',
-        element: <Welcome />,
-      },
-      {
-        path: 'home',
-        element: <Home />,
-      },
-      {
-        path: 'login',
-        element: <Login />,
-      },
-      {
-        path: 'signup',
-        element: <Signup />,
-      },
-      {
-        path: 'sociallogin',
-        element: <SocialLogin />,
-      },
-      {
-        path: 'mypage',
-        element: <MyPage />,
-      },
-      {
-        path: 'gymregister',
-        element: <GymRegister />,
-      },
-      {
-        path: 'check-password',
-        element: <PasswordCheckPage />,
-      },
-      {
-        path: 'edit-profile',
-        element: <EditProfilePage />,
-      },
+      { path: '', element: <Welcome /> },
+      { path: 'home', element: <Home /> },
+      { path: 'login', element: <Login /> },
+      { path: 'signup', element: <Signup /> },
+      { path: 'sociallogin', element: <SocialLogin /> },
+      { path: 'mypage', element: <MyPage /> },
+      { path: 'gymregister', element: <GymRegister /> },
+      { path: 'check-password', element: <PasswordCheckPage /> },
+      { path: 'edit-profile', element: <EditProfilePage /> },
+      { path: 'gyms/:gymId', element: <GymDetail /> },
+      { path: 'trainer-management', element: <TrainerRegister /> },
+      { path: 'gym-management', element: <GymRegister /> },
       // {
       //   path: '/fitness-goals/{fitnessGoalId}/daily-records',
       //   element: <GoalDetail />,

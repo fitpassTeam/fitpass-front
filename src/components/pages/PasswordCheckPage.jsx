@@ -1,24 +1,62 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-// 임시: 실제 비밀번호는 백엔드에서 검증해야 함
-const mockUser = {
-  password: '1234', // 실제로는 저장 X, 예시용
-};
+import { checkPassword } from '../../api/http';
 
 function PasswordCheckPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  // 디버깅: 토큰 상태 확인
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    console.log('Current token:', token);
+    console.log('Token exists:', !!token);
+    
+    // 토큰이 없으면 로그인 페이지로 리다이렉트
+    if (!token) {
+      console.log('No token found, redirecting to login');
+      navigate('/login');
+    }
+  }, [navigate]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    // TODO: 실제로는 API로 비밀번호 검증
-    if (password === mockUser.password) {
+    setIsLoading(true);
+
+    // 디버깅: 요청 전 토큰 확인
+    const token = localStorage.getItem('token');
+    console.log('Token before request:', token);
+
+    try {
+      await checkPassword(password);
+      // 비밀번호 확인 성공 시 프로필 수정 페이지로 이동
       navigate('/edit-profile');
-    } else {
-      setError('비밀번호가 일치하지 않습니다.');
+    } catch (error) {
+      console.error('Password check error:', error);
+      console.error('Error response:', error.response);
+      
+      if (error.response?.status === 401) {
+        if (error.response?.data?.message) {
+          setError(error.response.data.message);
+        } else {
+          setError('인증에 실패했습니다. 다시 로그인해주세요.');
+        }
+        
+        // 401 에러 시 토큰 삭제하고 로그인 페이지로 리다이렉트
+        localStorage.removeItem('token');
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
+      } else if (error.response?.status === 400) {
+        setError('잘못된 요청입니다.');
+      } else {
+        setError('서버 오류가 발생했습니다. 다시 시도해주세요.');
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -33,13 +71,15 @@ function PasswordCheckPage() {
           onChange={e => setPassword(e.target.value)}
           className="border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 outline-none"
           required
+          disabled={isLoading}
         />
         {error && <div className="text-red-500 text-sm text-center">{error}</div>}
         <button
           type="submit"
-          className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 rounded-lg font-bold text-lg shadow hover:from-pink-500 hover:to-blue-500 transition-all"
+          className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 rounded-lg font-bold text-lg shadow hover:from-pink-500 hover:to-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isLoading}
         >
-          확인
+          {isLoading ? '확인 중...' : '확인'}
         </button>
       </form>
     </div>

@@ -87,15 +87,15 @@ function MyPage() {
             <div className="flex gap-4">
               <button
                 className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-full font-bold shadow transition-all"
-                onClick={() => navigate('/gymregister')}
+                onClick={() => navigate('/gym-management')}
               >
-                체육관 등록
+                체육관 관리
               </button>
               <button
                 className="px-6 py-3 bg-pink-500 hover:bg-pink-600 text-white rounded-full font-bold shadow transition-all"
-                onClick={() => alert('트레이너 등록 기능은 추후 지원 예정입니다.')}
+                onClick={() => navigate('/trainer-management')}
               >
-                트레이너 등록
+                트레이너 관리
               </button>
             </div>
           </div>
