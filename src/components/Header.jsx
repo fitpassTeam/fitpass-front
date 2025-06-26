@@ -27,14 +27,14 @@ export default function Header() {
 
   const navItems = isLoggedIn
     ? [
-        { id: 'home', label: 'Home', to: '/' },
+        { id: 'home', label: 'Home', to: '/home' },
         { id: 'chat', label: <FaComments />, to: '#', onClick: () => alert('채팅 기능은 추후 추가 예정입니다.') },
         { id: 'notification', label: <FaBell />, to: '#', onClick: () => alert('알림 기능은 추후 추가 예정입니다.') },
         { id: 'mygoal', label: 'MyGoal', to: '/my-goal' },
         { id: 'mypage', label: 'MyPage', to: '/mypage' },
       ]
     : [
-        { id: 'home', label: 'Home', to: '/' },
+        { id: 'home', label: 'Home', to: '/home' },
         { id: 'login', label: 'Login', to: '/login' },
       ];
 
