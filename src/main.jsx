@@ -17,6 +17,9 @@ import PasswordCheckPage from './components/pages/PasswordCheckPage';
 import EditProfilePage from './components/pages/EditProfilePage';
 import GymDetail from './components/pages/GymDetail';
 import TrainerRegister from './components/pages/TrainerRegister';
+import MembershipManagement from './components/pages/MembershipManagement';
+import Reservation from './components/pages/Reservation';
+import ReservationManagement from './components/pages/ReservationManagement';
 
 const queryClient = new QueryClient();
 
@@ -37,6 +40,9 @@ const router = createBrowserRouter([
       { path: 'gyms/:gymId', element: <GymDetail /> },
       { path: 'trainer-management', element: <TrainerRegister /> },
       { path: 'gym-management', element: <GymRegister /> },
+      { path: 'membership-management', element: <MembershipManagement /> },
+      { path: 'reservation', element: <Reservation /> },
+      { path: 'reservation-management', element: <ReservationManagement /> },
       // {
       //   path: '/fitness-goals/{fitnessGoalId}/daily-records',
       //   element: <GoalDetail />,

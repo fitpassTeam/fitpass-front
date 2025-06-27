@@ -5,7 +5,7 @@ import gymImg from '../../assets/헬스장.png';
 function Welcome() {
   const navigate = useNavigate();
   return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] bg-gradient-to-br from-blue-100 via-pink-100 to-purple-100 animate-fadeIn">
+    <div className="flex flex-col items-center justify-center min-h-[70vh] bg-white animate-fadeIn">
       <img src={logo} alt="FitPass 로고" className="w-24 h-24 mb-4 rounded-full shadow-lg border-4 border-white" />
       <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-pink-400 to-purple-500 mb-4 drop-shadow-lg text-center">
         FITPASS에 오신 걸 환영합니다!

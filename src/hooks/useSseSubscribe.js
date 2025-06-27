@@ -20,8 +20,7 @@ export default function useSseSubscribe(onMessage) {
       if (onMessage) onMessage(JSON.parse(event.data));
     };
 
-    eventSource.onerror = (err) => {
-      console.error('SSE 연결 오류:', err);
+    eventSource.onerror = () => {
       eventSource.close();
     };
 
