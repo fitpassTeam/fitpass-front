@@ -63,8 +63,8 @@ function Signup() {
             const { city, district, detailAddress, ...rest } = formData;
             return signupUser({
                 ...rest,
-                address: `${city} ${district} ${detailAddress}`.trim(),
-                userRole: 'USER'
+                age: parseInt(formData.age),
+                address: `${city} ${district} ${detailAddress}`.trim()
             });
         },
         onSuccess: () => {
@@ -188,7 +188,6 @@ function Signup() {
                     <option value="">성별 선택</option>
                     <option value="MAN">남성</option>
                     <option value="WOMAN">여성</option>
-                    <option value="NONE">기타</option>
                 </select>
                 <button
                     type="submit"

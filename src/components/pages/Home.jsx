@@ -43,7 +43,14 @@ function Home() {
 
     // 검색/전체 API 분기
     const { data, isLoading, isError } = useQuery({
-        queryKey: ['gyms', JSON.stringify(searchParams), isSearch],
+        queryKey: [
+            'gyms',
+            page,
+            searchText || '',
+            selectedCity || '',
+            selectedDistrict || '',
+            isSearch
+        ],
         queryFn: () => {
             if (isSearch) {
                 return getSearchGyms(searchParams).then(res => res.data.data);
@@ -55,13 +62,10 @@ function Home() {
     });
 
     let gyms = [];
-    let totalPages = 1;
     if (data?.data?.content) {
       gyms = data.data.content;
-      totalPages = data.data.totalPages || 1;
     } else if (data?.content) {
       gyms = data.content;
-      totalPages = data.totalPages || 1;
     }
 
     // 실시간 인기 검색어(임시 데이터, 실제 API 연동 가능)
@@ -117,14 +121,11 @@ function Home() {
         setPage(0);
     };
 
-    // 렌더링/디버깅용 콘솔
-    console.log('gyms:', gyms, 'searchParams:', searchParams);
-
     return (
         <div className="max-w-7xl mx-auto px-2 py-8">
-            {/* 검색바 + 주소 드롭다운 */}
-            <div className="flex justify-center mb-8">
-                <div className="w-full max-w-2xl flex gap-2 items-center">
+            {/* 상단: 검색바 */}
+            <div className="flex justify-center mb-8 w-full">
+                <div className="w-full max-w-2xl flex gap-2 items-center justify-center">
                     <SearchBar
                         searchText={searchText}
                         onSearch={val => handleSearch(val, draftCity, draftDistrict)}
@@ -154,48 +155,49 @@ function Home() {
                     </select>
                 </div>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                {/* 체육관 리스트 */}
-                <div className="lg:col-span-2">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {/* 중단: 본문 그리드 (3등분) */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* 왼쪽: 체육관 리스트 (col-span-2) */}
+                <div className="lg:col-span-2 col-span-1">
+                    <div className="grid grid-cols-1 gap-8">
                         {isLoading && (
-                            <div className="col-span-2 flex flex-col items-center py-16 text-blue-400 animate-pulse">
+                            <div className="col-span-1 flex flex-col items-center py-16 text-blue-400 animate-pulse">
                                 <span className="text-2xl font-bold">로딩 중...</span>
                             </div>
                         )}
                         {isError ? (
-                            <div className="col-span-2 flex flex-col items-center py-16 text-red-400">
+                            <div className="col-span-1 flex flex-col items-center py-16 text-red-400">
                                 <span className="text-2xl font-bold">에러가 발생했습니다.</span>
                             </div>
                         ) : gyms.length === 0 && !isLoading ? (
-                            <div className="col-span-2 flex flex-col items-center py-16 text-gray-400">
+                            <div className="col-span-1 flex flex-col items-center py-16 text-gray-400">
                                 <span className="text-2xl font-bold">체육관이 없습니다.</span>
                             </div>
                         ) : null}
                         {gyms.map(gym => (
                             <div
                                 key={gym.gymId}
-                                className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow p-4 flex gap-4 items-center relative group cursor-pointer"
+                                className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow p-8 min-h-[220px] flex gap-10 items-center relative group cursor-pointer"
                                 onClick={() => navigate(`/gyms/${gym.gymId}`)}
                             >
-                                <div className="flex-shrink-0 w-20 h-20 bg-gray-100 flex items-center justify-center overflow-hidden rounded-xl border">
+                                <div className="flex-shrink-0 w-40 h-40 bg-gray-100 flex items-center justify-center overflow-hidden rounded-xl">
                                     {gym.gymImage && gym.gymImage.length > 0 ? (
                                         <img src={gym.gymImage[0]} alt={gym.name} className="object-cover w-full h-full" />
                                     ) : (
-                                        <span className="text-xs text-gray-400">이미지 없음</span>
+                                        <span className="text-base text-gray-400">이미지 없음</span>
                                     )}
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="text-lg font-bold truncate">{gym.name}</div>
-                                    <div className="text-gray-600 text-sm truncate">{gym.address}</div>
-                                    <div className="text-xs text-gray-500 truncate">{gym.summary}</div>
-                                    <div className="text-xs text-gray-500 mt-1">
-                                        운영시간: {formatTime(gym.openTime)} ~ {formatTime(gym.closeTime)}
-                                    </div>
+                                <div className="flex-1 min-w-0 flex flex-col gap-1 font-pretendard">
+                                    <div className="text-lg font-medium text-gray-900 leading-tight mb-0.5">{gym.name}</div>
+                                    <div className="text-sm text-gray-500 font-normal mb-0.5">{gym.address}</div>
+                                    <div className="text-xs text-gray-400 font-light mb-0.5">운영시간: {formatTime(gym.openTime)} ~ {formatTime(gym.closeTime)}</div>
+                                    {gym.summary && (
+                                      <div className="text-xs text-blue-500 font-medium mt-1">{gym.summary}</div>
+                                    )}
                                 </div>
                                 <button
-                                    className={`absolute top-3 right-3 text-2xl transition-transform duration-150 ${gym.isLiked ? 'scale-110' : 'scale-100'}`}
-                                    onClick={() => handleLike(gym.gymId)}
+                                    className={`absolute top-5 right-5 text-3xl transition-transform duration-150 ${gym.isLiked ? 'scale-110' : 'scale-100'}`}
+                                    onClick={e => { e.stopPropagation(); handleLike(gym.gymId); }}
                                     aria-label="좋아요"
                                 >
                                     {gym.isLiked ? (
@@ -207,71 +209,49 @@ function Home() {
                             </div>
                         ))}
                     </div>
-                    {/* 페이지네이션 */}
-                    <div className="flex justify-center mt-8 gap-2">
-                        <button
-                            onClick={() => setPage(page - 1)}
-                            disabled={page === 0}
-                            className="px-4 py-2 rounded-full bg-gray-100 hover:bg-blue-100 text-gray-700 font-semibold disabled:opacity-50"
-                        >
-                            이전
-                        </button>
-                        <span className="px-4 py-2 text-lg font-bold text-blue-500">{page + 1} / {totalPages}</span>
-                        <button
-                            onClick={() => setPage(page + 1)}
-                            disabled={page + 1 >= totalPages}
-                            className="px-4 py-2 rounded-full bg-gray-100 hover:bg-blue-100 text-gray-700 font-semibold disabled:opacity-50"
-                        >
-                            다음
-                        </button>
-                    </div>
                 </div>
-                {/* 내 목표/서비스 소개 카드 */}
-                <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-2xl shadow-md flex flex-col items-center justify-center min-h-[400px] p-8 col-span-1">
-                    {isLoggedIn ? (
-                        <div className="flex flex-col items-center">
-                            <div className="text-2xl font-bold mb-2 text-blue-600">내 목표</div>
-                            <div className="text-gray-500">아직 목표가 없어요.<br />목표를 추가해보세요!</div>
-                        </div>
-                    ) : (
-                        <>
-                            <div className="text-2xl font-bold mb-4 text-blue-600">FitPass로 할 수 있는 것</div>
-                            <ul className="space-y-3 text-gray-700 text-lg mb-6">
-                                <li>✅ 전국 헬스장 실시간 검색</li>
-                                <li>✅ 트레이너 정보/후기 확인</li>
-                                <li>✅ 내 운동 목표 관리</li>
-                                <li>✅ 실시간 예약</li>
-                                <li>✅ 실시간 알림/소통</li>
-                            </ul>
-                            <div className="mt-2 text-center text-base text-gray-500 font-semibold">회원가입하고 더 많은 혜택을 누리세요!</div>
-                            <button
-                                className="mt-6 px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-lg font-bold rounded-full shadow-lg hover:scale-105 transition-all duration-200"
-                                onClick={() => window.location.href = '/signup'}
-                            >
-                                회원가입
-                            </button>
-                        </>
-                    )}
-                </div>
-                {/* 실시간 인기 체육관 차트 */}
-                <div className="bg-white/90 rounded-2xl shadow-md flex flex-col items-center justify-center min-h-[400px] p-8 col-span-1">
-                    <div className="text-2xl font-bold mb-4 text-purple-600">실시간 인기 체육관</div>
-                    <ul className="w-full space-y-3">
-                        {hotGyms.map((gym, idx) => (
-                            <li
-                                key={gym}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-lg font-semibold transition-all duration-500 ${highlightIdx === idx ? 'bg-gradient-to-r from-pink-200 via-purple-200 to-blue-200 scale-105 shadow-lg text-purple-700' : 'text-gray-700'}`}
-                                style={{ minHeight: 48 }}
-                            >
-                                <span className="font-bold text-xl text-blue-400">#{idx + 1}</span>
-                                <span className="truncate">{gym}</span>
-                                {highlightIdx === idx && (
-                                    <span className="ml-auto animate-bounce text-pink-500 font-bold">🔥</span>
-                                )}
-                            </li>
-                        ))}
+                {/* 오른쪽: 실시간 인기 + 광고 (col-span-1, 세로로 쌓임) */}
+                <div className="lg:col-span-1 col-span-1 flex flex-col gap-8">
+                  {/* 실시간 인기 체육관 */}
+                  <div className="bg-white/90 rounded-2xl shadow-md flex flex-col items-center justify-center min-h-[200px] p-6">
+                    <div className="text-xl font-bold mb-3 text-purple-600">실시간 인기 체육관</div>
+                    <ul className="w-full space-y-2">
+                      {hotGyms.map((gym, idx) => (
+                        <li
+                          key={gym}
+                          className={`px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-all
+                            ${highlightIdx === idx ? 'bg-gradient-to-r from-pink-100 to-blue-100 text-blue-700 scale-105 shadow' : 'bg-gray-50 text-gray-700'}`}
+                        >
+                          <span className="text-base">{idx + 1}.</span> {gym}
+                        </li>
+                      ))}
                     </ul>
-                    <div className="mt-6 text-xs text-gray-400">실제 인기 검색어/체육관은 추후 API 연동</div>
+                  </div>
+                  {/* 헬스용품 추천 광고 (흰색 배경) */}
+                  <div className="bg-white rounded-2xl shadow-md flex flex-col items-center justify-center min-h-[200px] p-6">
+                    <a
+                      href="https://atemshop.com/product/list.html?cate_no=446&cafe_mkt=google_aw&utm_source=google&utm_medium=cpc&utm_campaign=h_conversions-brand&utm_term=&utm_content=250604_HEVENT_G_event_all_brand_home_egc&gad_source=1"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block w-full max-w-xs"
+                    >
+                      <img
+                        src="https://images.pexels.com/photos/5938366/pexels-photo-5938366.jpeg?auto=compress&w=400"
+                        alt="헬스용품 추천"
+                        className="w-full rounded-xl shadow-lg mb-3 border-2 border-blue-200"
+                      />
+                    </a>
+                    <div className="text-lg font-bold text-blue-600 mb-1">헬스식품/닭가슴살 추천</div>
+                    <div className="text-gray-600 text-sm mb-3">단백질 간편식, 닭가슴살, 건강식품을 한눈에!</div>
+                    <a
+                      href="https://atemshop.com/product/list.html?cate_no=446&cafe_mkt=google_aw&utm_source=google&utm_medium=cpc&utm_campaign=h_conversions-brand&utm_term=&utm_content=250604_HEVENT_G_event_all_brand_home_egc&gad_source=1"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold rounded-full shadow hover:scale-105 transition text-center"
+                    >
+                      에잇템 헬스식품 바로가기
+                    </a>
+                  </div>
                 </div>
             </div>
         </div>

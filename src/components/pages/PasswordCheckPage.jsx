@@ -8,15 +8,10 @@ function PasswordCheckPage() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  // 디버깅: 토큰 상태 확인
+  // 디버깅: 토큰 상태 확인 useEffect 제거
   useEffect(() => {
     const token = localStorage.getItem('token');
-    console.log('Current token:', token);
-    console.log('Token exists:', !!token);
-    
-    // 토큰이 없으면 로그인 페이지로 리다이렉트
     if (!token) {
-      console.log('No token found, redirecting to login');
       navigate('/login');
     }
   }, [navigate]);
@@ -61,7 +56,7 @@ function PasswordCheckPage() {
   };
 
   return (
-    <div className="min-h-[70vh] flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/30 z-50">
       <form onSubmit={handleSubmit} className="bg-white p-10 rounded-2xl shadow-xl flex flex-col gap-6 min-w-[340px]">
         <h2 className="text-2xl font-bold text-center mb-2">비밀번호 확인</h2>
         <input
