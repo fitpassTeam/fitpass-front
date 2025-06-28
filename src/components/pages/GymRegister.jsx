@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import addressData from '../../assets/addressData';
 import Select from 'react-select';
 import { registerGym, getMyGyms, updateGym, deleteGym } from '../../api/gyms';
+import { API_BASE_URL } from '../../api-config';
 
 // 임시: 실제로는 로그인 유저의 권한을 받아와야 함
 const mockUser = {
@@ -104,7 +105,7 @@ function GymRegister() {
     try {
       const token = localStorage.getItem('token');
       // 여러 장 업로드 API 호출
-      const res = await fetch('http://localhost:8080/images/multi', {
+      const res = await fetch(`${API_BASE_URL}/images/multi`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -128,7 +129,7 @@ function GymRegister() {
     if (!window.confirm('이 이미지를 삭제하시겠습니까?')) return;
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:8080/images?images=${encodeURIComponent(url)}`, {
+      const res = await fetch(`${API_BASE_URL}/images?images=${encodeURIComponent(url)}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
