@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Select from 'react-select';
 import { getMyGyms } from '../../api/gyms';
+import { API_BASE_URL } from '../../api-config';
 
 function MembershipManagement() {
   const [mode, setMode] = useState('register'); // 'register' | 'edit' | 'delete' | 'reservation'
@@ -26,7 +27,7 @@ function MembershipManagement() {
   useEffect(() => {
     if ((mode === 'edit' || mode === 'delete') && selectedGym) {
       const token = localStorage.getItem('token');
-      fetch(`http://localhost:8080/gyms/${selectedGym.value}/memberships`, {
+      fetch(`${API_BASE_URL}/gyms/${selectedGym.value}/memberships`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -61,7 +62,7 @@ function MembershipManagement() {
     if (mode === 'reservation' && selectedGym) {
       setLoadingReservations(true);
       setReservationError('');
-      fetch(`/gyms/${selectedGym.value}/trainer-reservations`, {
+      fetch(`${API_BASE_URL}/gyms/${selectedGym.value}/trainer-reservations`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
       })
         .then(res => res.json())
@@ -89,7 +90,7 @@ function MembershipManagement() {
     }
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:8080/gyms/${selectedGym.value}/memberships`, {
+      const res = await fetch(`${API_BASE_URL}/gyms/${selectedGym.value}/memberships`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -124,7 +125,7 @@ function MembershipManagement() {
     }
     try {
       const token = localStorage.getItem('token');
-      const url = `http://localhost:8080/gyms/${selectedGym.value}/memberships/${selectedMembership.id}`;
+      const url = `${API_BASE_URL}/gyms/${selectedGym.value}/memberships/${selectedMembership.id}`;
       const body = {
         name: form.name,
         price: Number(form.price),
@@ -149,7 +150,7 @@ function MembershipManagement() {
         setSelectedMembership(null);
         // memberships 목록 새로고침
         if (selectedGym) {
-          fetch(`http://localhost:8080/gyms/${selectedGym.value}/memberships`, {
+          fetch(`${API_BASE_URL}/gyms/${selectedGym.value}/memberships`, {
             headers: { 'Authorization': `Bearer ${token}` },
           })
             .then(res => res.json())
@@ -176,7 +177,7 @@ function MembershipManagement() {
     if (!window.confirm('정말로 이 이용권을 삭제하시겠습니까?')) return;
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:8080/gyms/${selectedGym.value}/memberships/${selectedMembership.id}`, {
+      const res = await fetch(`${API_BASE_URL}/gyms/${selectedGym.value}/memberships/${selectedMembership.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -188,7 +189,7 @@ function MembershipManagement() {
         setForm({ name: '', price: '', content: '', durationInDays: '' });
         // memberships 목록 새로고침
         if (selectedGym) {
-          fetch(`http://localhost:8080/gyms/${selectedGym.value}/memberships`, {
+          fetch(`${API_BASE_URL}/gyms/${selectedGym.value}/memberships`, {
             headers: { 'Authorization': `Bearer ${token}` },
           })
             .then(res => res.json())
@@ -207,7 +208,7 @@ function MembershipManagement() {
   // 예약 승인/거절 핸들러
   const handleReservationAction = async (reservationId, status) => {
     try {
-      const res = await fetch(`/reservations/${reservationId}`, {
+      const res = await fetch(`${API_BASE_URL}/reservations/${reservationId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

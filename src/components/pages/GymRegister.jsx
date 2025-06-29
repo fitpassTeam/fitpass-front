@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import addressData from '../../assets/addressData';
 import Select from 'react-select';
 import { registerGym, getMyGyms, updateGym, deleteGym } from '../../api/gyms';
+import { API_BASE_URL } from '../../api-config';
 
 // 임시: 실제로는 로그인 유저의 권한을 받아와야 함
 const mockUser = {
@@ -104,7 +105,7 @@ function GymRegister() {
     try {
       const token = localStorage.getItem('token');
       // 여러 장 업로드 API 호출
-      const res = await fetch('http://localhost:8080/images/multi', {
+      const res = await fetch(`${API_BASE_URL}/images/multi`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -128,7 +129,7 @@ function GymRegister() {
     if (!window.confirm('이 이미지를 삭제하시겠습니까?')) return;
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:8080/images?images=${encodeURIComponent(url)}`, {
+      const res = await fetch(`${API_BASE_URL}/images?images=${encodeURIComponent(url)}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -232,7 +233,7 @@ function GymRegister() {
         <button type="button" className={`px-4 py-2 rounded font-bold ${mode === 'edit' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`} onClick={() => setMode('edit')}>수정</button>
         <button type="button" className={`px-4 py-2 rounded font-bold ${mode === 'delete' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`} onClick={() => setMode('delete')}>삭제</button>
       </div>
-      {mode === 'delete' ? (
+      {mode === 'delete' || mode === 'edit' ? (
         <>
           <div className="mb-4 w-full">
             <label htmlFor="my-gym-select" className="block font-semibold mb-1">내 체육관 선택</label>
@@ -246,18 +247,145 @@ function GymRegister() {
               menuPlacement="auto"
             />
           </div>
-          {error && <div className="text-red-500 font-bold text-center">{error}</div>}
-          <button
-            type="button"
-            className="w-full bg-red-500 text-white font-bold py-3 rounded-lg hover:bg-red-600 transition"
-            onClick={handleDelete}
-            disabled={!selectedGym}
-          >
-            체육관 삭제
-          </button>
+          {mode === 'delete' ? (
+            <>
+              {error && <div className="text-red-500 font-bold text-center">{error}</div>}
+              <button
+                type="button"
+                className="w-full bg-red-500 text-white font-bold py-3 rounded-lg hover:bg-red-600 transition"
+                onClick={handleDelete}
+                disabled={!selectedGym}
+              >
+                체육관 삭제
+              </button>
+            </>
+          ) : (
+            <form onSubmit={handleEdit} className="space-y-5 w-full">
+              <input
+                type="text"
+                name="name"
+                placeholder="체육관 이름"
+                value={form.name}
+                onChange={handleChange}
+                className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 transition-all outline-none"
+                required
+              />
+              <input
+                type="tel"
+                name="number"
+                placeholder="전화번호 (예: 010-1234-5678)"
+                value={form.number}
+                onChange={handleChange}
+                className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 transition-all outline-none"
+                required
+              />
+              <textarea
+                name="content"
+                placeholder="체육관 설명"
+                value={form.content}
+                onChange={handleChange}
+                className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 transition-all outline-none resize-none"
+                rows={3}
+                required
+              />
+              <div className="flex gap-2">
+                <div className="w-1/2">
+                  <Select
+                    options={cityOptions}
+                    value={cityOptions.find(opt => opt.value === form.city) || null}
+                    onChange={option => setForm(prev => ({ ...prev, city: option ? option.value : '', district: '' }))}
+                    placeholder="시/도 선택"
+                    isClearable
+                    menuPlacement="auto"
+                  />
+                </div>
+                <div className="w-1/2">
+                  <Select
+                    options={districtOptions}
+                    value={districtOptions.find(opt => opt.value === form.district) || null}
+                    onChange={option => setForm(prev => ({ ...prev, district: option ? option.value : '' }))}
+                    placeholder="시/군/구 선택"
+                    isDisabled={!form.city}
+                    isClearable
+                    menuPlacement="auto"
+                  />
+                </div>
+              </div>
+              <input
+                type="text"
+                name="detailAddress"
+                placeholder="상세주소"
+                value={form.detailAddress}
+                onChange={handleChange}
+                className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 outline-none"
+                required
+              />
+              <div className="flex gap-4">
+                <input
+                  type="time"
+                  name="openTime"
+                  value={form.openTime}
+                  onChange={handleChange}
+                  className="w-1/2 border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 transition-all outline-none"
+                  required
+                />
+                <input
+                  type="time"
+                  name="closeTime"
+                  value={form.closeTime}
+                  onChange={handleChange}
+                  className="w-1/2 border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 transition-all outline-none"
+                  required
+                />
+              </div>
+              <input
+                type="text"
+                name="summary"
+                placeholder="상태메시지/한줄소개 (예: 맛있는 체육관)"
+                value={form.summary || ''}
+                onChange={handleChange}
+                className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 outline-none"
+                maxLength={50}
+                required
+              />
+              <div>
+                <label className="block font-bold mb-2">사진 업로드 (여러 장 가능, 첫 번째가 대표)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageChange}
+                  className="w-full"
+                />
+                <div className="flex gap-2 mt-2 flex-wrap">
+                  {imageUrls.map((url, idx) => (
+                    <div key={idx} className="relative inline-block">
+                      <img
+                        src={url}
+                        alt={url ? `미리보기${idx + 1}` : '이미지 없음'}
+                        className={`w-20 h-20 object-cover rounded-lg border-2 ${idx === 0 ? 'border-blue-500' : 'border-gray-200'}`}
+                        title={idx === 0 ? '대표사진' : undefined}
+                        onError={e => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/80?text=No+Image'; }}
+                      />
+                      <button
+                        type="button"
+                        className="absolute top-0 right-0 bg-white bg-opacity-80 rounded-full p-1 text-xs text-red-500 hover:bg-red-100 border border-red-300"
+                        onClick={() => handleImageDelete(url)}
+                        style={{ transform: 'translate(40%,-40%)' }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {error && <div className="text-red-500 font-bold text-center">{error}</div>}
+              <button type="submit" className="w-full bg-green-500 text-white font-bold py-3 rounded-lg hover:bg-green-600 transition">체육관 수정</button>
+            </form>
+          )}
         </>
       ) : (
-        <form onSubmit={mode === 'register' ? handleSubmit : handleEdit} className="space-y-5 w-full">
+        <form onSubmit={handleSubmit} className="space-y-5 w-full">
           <input
             type="text"
             name="name"
@@ -266,7 +394,6 @@ function GymRegister() {
             onChange={handleChange}
             className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 transition-all outline-none"
             required
-            disabled={mode==='delete'}
           />
           <input
             type="tel"
@@ -276,7 +403,6 @@ function GymRegister() {
             onChange={handleChange}
             className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 transition-all outline-none"
             required
-            disabled={mode==='delete'}
           />
           <textarea
             name="content"
@@ -286,7 +412,6 @@ function GymRegister() {
             className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 transition-all outline-none resize-none"
             rows={3}
             required
-            disabled={mode==='delete'}
           />
           <div className="flex gap-2">
             <div className="w-1/2">
@@ -297,7 +422,6 @@ function GymRegister() {
                 placeholder="시/도 선택"
                 isClearable
                 menuPlacement="auto"
-                disabled={mode==='delete'}
               />
             </div>
             <div className="w-1/2">
@@ -309,7 +433,6 @@ function GymRegister() {
                 isDisabled={!form.city}
                 isClearable
                 menuPlacement="auto"
-                disabled={mode==='delete'}
               />
             </div>
           </div>
@@ -321,7 +444,6 @@ function GymRegister() {
             onChange={handleChange}
             className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 outline-none"
             required
-            disabled={mode==='delete'}
           />
           <div className="flex gap-4">
             <input
@@ -331,7 +453,6 @@ function GymRegister() {
               onChange={handleChange}
               className="w-1/2 border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 transition-all outline-none"
               required
-              disabled={mode==='delete'}
             />
             <input
               type="time"
@@ -340,7 +461,6 @@ function GymRegister() {
               onChange={handleChange}
               className="w-1/2 border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 transition-all outline-none"
               required
-              disabled={mode==='delete'}
             />
           </div>
           <input
@@ -352,7 +472,6 @@ function GymRegister() {
             className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 outline-none"
             maxLength={50}
             required
-            disabled={mode==='delete'}
           />
           <div>
             <label className="block font-bold mb-2">사진 업로드 (여러 장 가능, 첫 번째가 대표)</label>
@@ -362,7 +481,6 @@ function GymRegister() {
               multiple
               onChange={handleImageChange}
               className="w-full"
-              disabled={mode==='delete'}
             />
             <div className="flex gap-2 mt-2 flex-wrap">
               {imageUrls.map((url, idx) => (
@@ -374,23 +492,20 @@ function GymRegister() {
                     title={idx === 0 ? '대표사진' : undefined}
                     onError={e => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/80?text=No+Image'; }}
                   />
-                  {mode === 'edit' && (
-                    <button
-                      type="button"
-                      className="absolute top-0 right-0 bg-white bg-opacity-80 rounded-full p-1 text-xs text-red-500 hover:bg-red-100 border border-red-300"
-                      onClick={() => handleImageDelete(url)}
-                      style={{ transform: 'translate(40%,-40%)' }}
-                    >
-                      ×
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    className="absolute top-0 right-0 bg-white bg-opacity-80 rounded-full p-1 text-xs text-red-500 hover:bg-red-100 border border-red-300"
+                    onClick={() => handleImageDelete(url)}
+                    style={{ transform: 'translate(40%,-40%)' }}
+                  >
+                    ×
+                  </button>
                 </div>
               ))}
             </div>
           </div>
           {error && <div className="text-red-500 font-bold text-center">{error}</div>}
-          {mode === 'register' && <button type="submit" className="w-full bg-blue-500 text-white font-bold py-3 rounded-lg hover:bg-blue-600 transition">체육관 등록</button>}
-          {mode === 'edit' && <button type="submit" className="w-full bg-green-500 text-white font-bold py-3 rounded-lg hover:bg-green-600 transition">체육관 수정</button>}
+          <button type="submit" className="w-full bg-blue-500 text-white font-bold py-3 rounded-lg hover:bg-blue-600 transition">체육관 등록</button>
         </form>
       )}
     </div>
