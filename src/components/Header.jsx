@@ -3,7 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import Button from './Button'; // 커스텀 버튼 컴포넌트
 import logo from '../assets/logo.jpg';
 import { MdNotifications, MdChat, MdHome } from 'react-icons/md';
-import { FaBullseye, FaUserCircle, FaBars, FaTimes } from 'react-icons/fa';
+import { FaUserCircle, FaBars, FaTimes } from 'react-icons/fa';
 import { useNotification } from '../context/NotificationContext';
 import useSseSubscribe from '../hooks/useSseSubscribe';
 
@@ -58,10 +58,6 @@ export default function Header() {
     { id: 'notification', label: <><MdNotifications className="inline mb-1 mr-1 text-pink-500" />알림</>, to: '#', onClick: () => {
       if (!isLoggedIn) { alert('로그인한 유저만 이용 가능합니다.'); return; }
       setShowNotification((v) => !v);
-    } },
-    { id: 'mygoal', label: <><FaBullseye className="inline mb-1 mr-1 text-purple-500" />나의 목표</>, to: '/my-goal', onClick: () => {
-      if (!isLoggedIn) { alert('로그인한 유저만 이용 가능합니다.'); return; }
-      navigate('/my-goal');
     } },
     { id: 'mypage', label: <><FaUserCircle className="inline mb-1 mr-1 text-gray-500" />마이페이지</>, to: '/mypage', onClick: () => {
       if (!isLoggedIn) { alert('로그인한 유저만 이용 가능합니다.'); return; }
