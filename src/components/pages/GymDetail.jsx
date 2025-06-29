@@ -14,10 +14,17 @@ function GymDetail() {
   const { gymId } = useParams();
   const navigate = useNavigate();
   const [selectedTrainerId, setSelectedTrainerId] = useState('');
-  const [selectedMembershipId, setSelectedMembershipId] = useState('');
   const [mainIdx, setMainIdx] = useState(0); // 대표 이미지 인덱스
-  const [tab, setTab] = useState('pass'); // 'pass' | 'post'
   const [modalOpen, setModalOpen] = useState(false);
+  const [mainTrainerImgIdx, setMainTrainerImgIdx] = useState(0);
+  
+  // 로그인 상태 확인
+  const isLoggedIn = !!localStorage.getItem('token');
+
+  // 로그인 안내 함수
+  const showLoginAlert = () => {
+    alert('로그인한 유저만 이용할 수 있습니다.');
+  };
 
   // 체육관 상세 (단일 상세 API가 없으면 기존 방식 유지)
   const { data: gymData, isLoading: gymLoading } = useQuery({
@@ -61,7 +68,6 @@ function GymDetail() {
 
   useEffect(() => { setMainIdx(0); }, [gymData]);
 
-  const selectedMembership = memberships.find(mb => String(mb.id) === String(selectedMembershipId));
   const selectedTrainer = trainers.find(tr => String(tr.id) === String(selectedTrainerId));
 
   if (gymLoading) return <div className="text-center py-20 text-xl text-blue-400 animate-pulse">로딩 중...</div>;
@@ -106,118 +112,134 @@ function GymDetail() {
       </div>
       {/* 하단: 이용권 및 PT + 게시글 탭 */}
       <div className="flex flex-col md:flex-row gap-4">
+        {/* 트레이너 리스트 카드형 */}
         <div className="flex-1 bg-blue-50 rounded-xl p-4">
           <h2 className="text-xl font-bold mb-4">트레이너 목록</h2>
-          {/* 선택창 */}
-          <select
-            className="w-full mb-4 p-2 rounded border"
-            value={selectedTrainerId}
-            onChange={e => setSelectedTrainerId(e.target.value)}
-          >
-            <option value="">트레이너를 선택하세요</option>
+          <div className="flex flex-col gap-4">
+            {trainers.length === 0 && <div className="text-gray-400">등록된 트레이너가 없습니다.</div>}
             {trainers.map(tr => (
-              <option key={tr.id} value={tr.id}>{tr.name}</option>
-            ))}
-          </select>
-          {/* 상세 카드 */}
-          {selectedTrainer && (
-            <>
               <div
-                className="p-4 bg-white rounded-xl shadow border border-blue-200 mb-4 cursor-pointer hover:shadow-lg transition"
-                onClick={() => setModalOpen(true)}
+                key={tr.id}
+                className="p-4 bg-white rounded-xl shadow border border-blue-200 flex items-center gap-4 cursor-pointer hover:shadow-lg transition"
+                onClick={() => { setSelectedTrainerId(tr.id); setModalOpen(true); }}
               >
-                <div className="flex items-center gap-4 mb-2">
-                  <img src={selectedTrainer.trainerImage?.[0] || 'https://via.placeholder.com/80?text=No+Image'} alt={selectedTrainer.name} className="w-20 h-20 object-cover rounded-full border" />
-                  <div>
-                    <div className="font-bold text-lg">{selectedTrainer.name}</div>
-                    <div className="text-gray-500">₩{selectedTrainer.price?.toLocaleString()}</div>
-                    <div className="text-xs text-gray-400 mt-1">{selectedTrainer.trainerStatus}</div>
-                  </div>
+                <img src={tr.trainerImage?.[0] || 'https://via.placeholder.com/80?text=No+Image'} alt={tr.name} className="w-20 h-20 object-cover rounded-full border" />
+                <div className="flex-1 min-w-0">
+                  <div className="font-bold text-lg">{tr.name}</div>
+                  <div className="text-gray-500">₩{tr.price?.toLocaleString()}</div>
                 </div>
                 <button
-                  className="w-full bg-blue-500 text-white font-bold py-2 rounded-lg hover:bg-blue-600 transition mt-2"
-                  onClick={e => { e.stopPropagation(); navigate(`/reservation?type=trainer&gymId=${gymId}&trainerId=${selectedTrainer.id}`); }}
+                  className="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition"
+                  onClick={e => { e.stopPropagation(); if (!isLoggedIn) { showLoginAlert(); return; } navigate(`/reservation?type=trainer&gymId=${gymId}&trainerId=${tr.id}`); }}
                 >
-                  트레이너 예약하기
+                  예약하기
                 </button>
               </div>
-              {/* 모달 */}
-              {modalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-white/30">
-                  <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 relative animate-fadeIn flex flex-col items-center">
+            ))}
+          </div>
+          {/* 트레이너 상세 모달 */}
+          {modalOpen && selectedTrainer && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-white/30">
+              <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full h-[95vh] max-h-[95vh] overflow-y-auto p-4 sm:p-10 relative animate-fadeIn flex flex-col sm:flex-row items-start gap-10">
+                {/* 왼쪽: 사진 영역 */}
+                <div className="flex flex-col items-center justify-center max-w-[600px] w-full mx-auto">
+                  <div className="flex items-center gap-2 mb-4 w-full">
                     <button
-                      className="absolute top-4 right-4 text-gray-400 hover:text-pink-500 text-2xl font-bold"
-                      onClick={() => setModalOpen(false)}
-                      aria-label="닫기"
+                      className="text-3xl text-gray-400 hover:text-blue-500 px-2"
+                      onClick={() => {
+                        const len = selectedTrainer.trainerImage?.length || 0;
+                        if (len > 0) setMainTrainerImgIdx((mainTrainerImgIdx - 1 + len) % len);
+                      }}
+                      aria-label="이전 사진"
                     >
-                      ×
+                      {'<'}
                     </button>
-                    {/* 이미지 여러장 */}
-                    <div className="flex gap-2 mb-4 flex-wrap justify-center">
-                      {(selectedTrainer.trainerImage && selectedTrainer.trainerImage.length > 0)
-                        ? selectedTrainer.trainerImage.map((img, idx) => (
-                            <img
-                              key={idx}
-                              src={img}
-                              alt={selectedTrainer.name + ' 사진' + (idx+1)}
-                              className="w-24 h-24 object-cover rounded-lg border shadow"
-                            />
-                          ))
-                        : <img src="https://via.placeholder.com/120?text=No+Image" alt="No Image" className="w-24 h-24 object-cover rounded-lg border shadow" />
-                      }
-                    </div>
-                    <div className="text-2xl font-extrabold mb-1 text-center">{selectedTrainer.name}</div>
-                    <div className="text-blue-500 font-semibold mb-2 text-center">₩{selectedTrainer.price?.toLocaleString()}</div>
-                    <div className="text-xs text-gray-400 mb-2 text-center">{selectedTrainer.trainerStatus}</div>
-                    <div className="w-full mb-3">
-                      <div className="font-bold text-gray-700 mb-1">경력</div>
-                      <div className="text-gray-700 whitespace-pre-line break-words bg-blue-50 rounded-lg p-3 min-h-[40px]">{selectedTrainer.experience || '경력 정보 없음'}</div>
-                    </div>
-                    <div className="w-full mb-4">
-                      <div className="font-bold text-gray-700 mb-1">자기소개</div>
-                      <div className="text-gray-700 whitespace-pre-line break-words bg-purple-50 rounded-lg p-3 min-h-[60px] max-h-60 overflow-y-auto">{selectedTrainer.content || '자기소개 정보 없음'}</div>
-                    </div>
+                    <img
+                      src={selectedTrainer.trainerImage?.[mainTrainerImgIdx] || 'https://via.placeholder.com/600x800?text=No+Image'}
+                      alt="대표사진"
+                      className="mx-auto max-h-[80vh] w-full max-w-[600px] h-auto object-contain bg-gray-100 rounded-2xl border shadow-lg"
+                    />
                     <button
-                      className="w-full bg-blue-500 text-white font-bold py-3 rounded-lg hover:bg-blue-600 transition text-lg mt-2"
-                      onClick={() => { setModalOpen(false); navigate(`/reservation?type=trainer&gymId=${gymId}&trainerId=${selectedTrainer.id}`); }}
+                      className="text-3xl text-gray-400 hover:text-blue-500 px-2"
+                      onClick={() => {
+                        const len = selectedTrainer.trainerImage?.length || 0;
+                        if (len > 0) setMainTrainerImgIdx((mainTrainerImgIdx + 1) % len);
+                      }}
+                      aria-label="다음 사진"
                     >
-                      트레이너 예약하기
+                      {'>'}
                     </button>
                   </div>
+                  {/* 썸네일 리스트 */}
+                  <div className="flex gap-2 mb-2 flex-wrap justify-center w-full">
+                    {(selectedTrainer.trainerImage && selectedTrainer.trainerImage.length > 0)
+                      ? selectedTrainer.trainerImage.map((img, idx) => (
+                          <img
+                            key={idx}
+                            src={img}
+                            alt={selectedTrainer.name + ' 썸네일' + (idx+1)}
+                            className={`w-20 h-20 object-cover rounded-lg border-2 cursor-pointer transition ${mainTrainerImgIdx === idx ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-200'}`}
+                            onClick={() => setMainTrainerImgIdx(idx)}
+                          />
+                        ))
+                      : <img src="https://via.placeholder.com/120x120?text=No+Image" alt="No Image" className="w-20 h-20 object-cover rounded-lg border" />
+                    }
+                  </div>
                 </div>
-              )}
-            </>
-          )}
-          {trainers.length === 0 && <div className="text-gray-400">등록된 트레이너가 없습니다.</div>}
-        </div>
-        <div className="flex-1 bg-purple-50 rounded-xl p-4">
-          <h2 className="text-xl font-bold mb-4">이용권 목록</h2>
-          {/* 선택창 */}
-          <select
-            className="w-full mb-4 p-2 rounded border"
-            value={selectedMembershipId}
-            onChange={e => setSelectedMembershipId(e.target.value)}
-          >
-            <option value="">이용권을 선택하세요</option>
-            {memberships.map(mb => (
-              <option key={mb.id} value={mb.id}>{mb.name}</option>
-            ))}
-          </select>
-          {/* 상세 카드 */}
-          {selectedMembership && (
-            <div className="p-4 bg-white rounded-xl shadow border border-purple-200 mb-4">
-              <div className="font-bold text-lg mb-1">{selectedMembership.name}</div>
-              <div className="text-gray-500 mb-1">₩{selectedMembership.price?.toLocaleString()} / {selectedMembership.durationInDays}일</div>
-              <div className="text-gray-700 mb-2 whitespace-pre-line">{selectedMembership.content}</div>
-              <button
-                className="w-full bg-purple-500 text-white font-bold py-2 rounded-lg hover:bg-purple-600 transition"
-                onClick={() => navigate(`/reservation?type=membership&gymId=${gymId}&membershipId=${selectedMembership.id}`)}
-              >
-                이용권 구매하기
-              </button>
+                {/* 오른쪽: 정보 영역 */}
+                <div className="flex flex-col flex-1 min-w-[320px] max-w-2xl justify-start">
+                  <div className="flex flex-row items-start gap-4 mb-4 w-full">
+                    <div className="font-extrabold text-2xl text-gray-900 flex-1 text-left">{selectedTrainer.name}</div>
+                    <div className="font-semibold text-xl text-blue-500 text-right whitespace-nowrap">₩{selectedTrainer.price?.toLocaleString()}</div>
+                  </div>
+                  {/* 경력 */}
+                  <div className="mb-2">
+                    <div className="font-bold text-gray-700 mb-1">경력</div>
+                    <div className="text-gray-700 whitespace-pre-line break-words bg-blue-50 rounded-lg p-3 min-h-[40px] max-h-80 overflow-y-auto">{selectedTrainer.experience || '경력 정보 없음'}</div>
+                  </div>
+                  {/* 자기소개 */}
+                  <div className="mb-6">
+                    <div className="font-bold text-gray-700 mb-1">자기소개</div>
+                    <div className="text-gray-700 whitespace-pre-line break-words bg-purple-50 rounded-lg p-3 min-h-[60px] max-h-80 overflow-y-auto">{selectedTrainer.content || '자기소개 정보 없음'}</div>
+                  </div>
+                  <button
+                    className="w-full bg-blue-500 text-white font-bold py-3 rounded-lg hover:bg-blue-600 transition text-lg mt-2"
+                    onClick={() => { setModalOpen(false); setMainTrainerImgIdx(0); if (!isLoggedIn) { showLoginAlert(); return; } navigate(`/reservation?type=trainer&gymId=${gymId}&trainerId=${selectedTrainer.id}`); }}
+                  >
+                    트레이너 예약하기
+                  </button>
+                </div>
+                {/* 닫기 버튼 */}
+                <button
+                  className="absolute top-4 right-4 text-gray-400 hover:text-pink-500 text-2xl font-bold"
+                  onClick={() => { setModalOpen(false); setMainTrainerImgIdx(0); }}
+                  aria-label="닫기"
+                >
+                  ×
+                </button>
+              </div>
             </div>
           )}
-          {memberships.length === 0 && <div className="text-gray-400">등록된 이용권이 없습니다.</div>}
+        </div>
+        {/* 이용권 리스트 카드형 */}
+        <div className="flex-1 bg-purple-50 rounded-xl p-4">
+          <h2 className="text-xl font-bold mb-4">이용권 목록</h2>
+          <div className="flex flex-col gap-4">
+            {memberships.length === 0 && <div className="text-gray-400">등록된 이용권이 없습니다.</div>}
+            {memberships.map(mb => (
+              <div key={mb.id} className="p-4 bg-white rounded-xl shadow border border-purple-200 flex flex-col gap-2">
+                <div className="font-bold text-lg mb-1">{mb.name}</div>
+                <div className="text-gray-500 mb-1">₩{mb.price?.toLocaleString()} / {mb.durationInDays}일</div>
+                <div className="text-gray-700 mb-2 whitespace-pre-line">{mb.content}</div>
+                <button
+                  className="w-full bg-purple-500 text-white font-bold py-2 rounded-lg hover:bg-purple-600 transition"
+                  onClick={() => { if (!isLoggedIn) { showLoginAlert(); return; } navigate(`/reservation?type=membership&gymId=${gymId}&membershipId=${mb.id}`); }}
+                >
+                  이용권 구매하기
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
