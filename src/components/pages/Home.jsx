@@ -139,18 +139,19 @@ function Home() {
         <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
             {/* 상단: 검색바 */}
             <div className="flex flex-col sm:flex-row justify-center mb-8 w-full gap-2">
-                <div className="w-full flex flex-row gap-2 items-center justify-center">
+                <div className="w-full flex flex-col md:flex-row gap-2 items-center justify-center">
                     <SearchBar
                         searchText={searchText}
                         onSearch={val => handleSearch(val, draftCity, draftDistrict)}
                         logo={logo}
+                        className="w-full md:w-auto flex-1"
                     />
                     <select
                         name="city"
                         value={draftCity}
                         onChange={handleCityChange}
-                        className="border-2 border-blue-400 focus:border-blue-500 bg-white rounded-full px-3 py-2 outline-none min-w-[120px] w-auto h-14 text-base font-semibold"
-                        style={{ marginLeft: 8 }}
+                        className="border-2 border-blue-400 focus:border-blue-500 bg-white rounded-full px-3 py-2 outline-none min-w-[120px] max-w-[200px] w-full md:w-auto h-14 text-base font-semibold"
+                        style={{ marginLeft: 0 }}
                     >
                         <option value="">시/도</option>
                         {cities.map(city => (
@@ -161,8 +162,8 @@ function Home() {
                         name="district"
                         value={draftDistrict}
                         onChange={handleDistrictChange}
-                        className="border-2 border-blue-400 focus:border-blue-500 bg-white rounded-full px-3 py-2 outline-none min-w-[120px] w-auto h-14 text-base font-semibold"
-                        style={{ marginLeft: 8 }}
+                        className="border-2 border-blue-400 focus:border-blue-500 bg-white rounded-full px-3 py-2 outline-none min-w-[120px] max-w-[200px] w-full md:w-auto h-14 text-base font-semibold"
+                        style={{ marginLeft: 0 }}
                         disabled={!draftCity}
                     >
                         <option value="">시/군/구</option>
