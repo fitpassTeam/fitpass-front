@@ -60,4 +60,8 @@ export function deleteGym(gymId) {
       Authorization: `Bearer ${token}`,
     },
   });
+}
+
+export function getPopularGyms() {
+  return api.get('/search/gyms/popular');
 } 

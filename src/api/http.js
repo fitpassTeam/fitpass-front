@@ -27,7 +27,6 @@ function create(baseURL, options) {
       if (!error.response) {
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
         return Promise.reject(error);
       }
       const status = error.response.status;
@@ -56,21 +55,18 @@ function create(baseURL, options) {
             // refreshToken도 만료/실패: 완전 로그아웃
             localStorage.removeItem('token');
             localStorage.removeItem('refreshToken');
-            window.location.href = '/login';
             return Promise.reject(refreshError);
           }
         } else {
           // refreshToken 없음: 로그아웃
           localStorage.removeItem('token');
           localStorage.removeItem('refreshToken');
-          window.location.href = '/login';
         }
       }
       // 기타 인증 에러(403 등)도 로그아웃
       if (status === 403) {
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
       }
       return Promise.reject(error);
     }

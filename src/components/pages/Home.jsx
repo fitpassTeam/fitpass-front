@@ -1,11 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getGyms, getSearchGyms, toggleLikeGym } from '../../api/gyms';
+import { getGyms, getSearchGyms, toggleLikeGym, getPopularGyms } from '../../api/gyms';
 import SearchBar from '../SearchBar';
 import { FaHeart, FaRegHeart } from 'react-icons/fa';
 import '../../index.css'; // Tailwind custom keyframes 적용을 위해
 import addressData from '../../assets/addressData';
 import { useNavigate } from 'react-router-dom';
+import { useQuery as useQueryPopular } from '@tanstack/react-query';
+import logo from '../../assets/logo.jpg';
 
 function formatTime(timeStr) {
     // '06:00:00' -> '06:00'
@@ -61,6 +63,18 @@ function Home() {
         keepPreviousData: true,
     });
 
+    // 인기 체육관 API 호출
+    const { data: popularGymsData, isLoading: isPopularLoading, isError: isPopularError } = useQueryPopular({
+        queryKey: ['popularGyms'],
+        queryFn: async () => {
+            const res = await getPopularGyms();
+            return res.data;
+        },
+        refetchOnWindowFocus: false,
+    });
+    // 인기 체육관 데이터 추출 (최대 5개)
+    const popularGyms = Array.isArray(popularGymsData?.data) ? popularGymsData.data.slice(0, 5) : [];
+
     let gyms = [];
     if (data?.data?.content) {
       gyms = data.data.content;
@@ -68,22 +82,22 @@ function Home() {
       gyms = data.content;
     }
 
-    // 실시간 인기 검색어(임시 데이터, 실제 API 연동 가능)
-    const [hotGyms] = useState([
-        '강남 피트니스',
-        '홍대 바디짐',
-        '부산 헬스존',
-        '대구 PT스튜디오',
-        '신촌 크로스핏'
-    ]);
     // 애니메이션 효과를 위한 인덱스
     const [highlightIdx, setHighlightIdx] = useState(0);
+
+    // popularGyms가 바뀔 때만 0으로 리셋
     React.useEffect(() => {
+        setHighlightIdx(0);
+    }, [popularGyms.length]);
+
+    // highlightIdx 애니메이션 순환
+    React.useEffect(() => {
+        if (!popularGyms.length) return;
         const interval = setInterval(() => {
-            setHighlightIdx(idx => (idx + 1) % hotGyms.length);
+            setHighlightIdx(idx => (idx + 1) % popularGyms.length);
         }, 1800);
         return () => clearInterval(interval);
-    }, [hotGyms.length]);
+    }, [popularGyms.length]);
 
     const handleLike = async (gymId) => {
         if (!isLoggedIn) {
@@ -122,19 +136,21 @@ function Home() {
     };
 
     return (
-        <div className="max-w-7xl mx-auto px-2 py-8">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
             {/* 상단: 검색바 */}
-            <div className="flex justify-center mb-8 w-full">
-                <div className="w-full max-w-2xl flex gap-2 items-center justify-center">
+            <div className="flex flex-col sm:flex-row justify-center mb-8 w-full gap-2">
+                <div className="w-full flex flex-row gap-2 items-center justify-center">
                     <SearchBar
                         searchText={searchText}
                         onSearch={val => handleSearch(val, draftCity, draftDistrict)}
+                        logo={logo}
                     />
                     <select
                         name="city"
                         value={draftCity}
                         onChange={handleCityChange}
-                        className="border-2 border-blue-200 focus:border-blue-500 rounded-lg px-3 py-2 outline-none min-w-[120px]"
+                        className="border-2 border-blue-400 focus:border-blue-500 bg-white rounded-full px-3 py-2 outline-none min-w-[120px] w-auto h-14 text-base font-semibold"
+                        style={{ marginLeft: 8 }}
                     >
                         <option value="">시/도</option>
                         {cities.map(city => (
@@ -145,7 +161,8 @@ function Home() {
                         name="district"
                         value={draftDistrict}
                         onChange={handleDistrictChange}
-                        className="border-2 border-blue-200 focus:border-blue-500 rounded-lg px-3 py-2 outline-none min-w-[120px]"
+                        className="border-2 border-blue-400 focus:border-blue-500 bg-white rounded-full px-3 py-2 outline-none min-w-[120px] w-auto h-14 text-base font-semibold"
+                        style={{ marginLeft: 8 }}
                         disabled={!draftCity}
                     >
                         <option value="">시/군/구</option>
@@ -155,11 +172,11 @@ function Home() {
                     </select>
                 </div>
             </div>
-            {/* 중단: 본문 그리드 (3등분) */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* 중단: 본문 그리드 (반응형) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* 왼쪽: 체육관 리스트 (col-span-2) */}
-                <div className="lg:col-span-2 col-span-1">
-                    <div className="grid grid-cols-1 gap-8">
+                <div className="md:col-span-2 col-span-1">
+                    <div className="grid grid-cols-1 gap-6">
                         {isLoading && (
                             <div className="col-span-1 flex flex-col items-center py-16 text-blue-400 animate-pulse">
                                 <span className="text-2xl font-bold">로딩 중...</span>
@@ -177,17 +194,17 @@ function Home() {
                         {gyms.map(gym => (
                             <div
                                 key={gym.gymId}
-                                className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow p-8 min-h-[220px] flex gap-10 items-center relative group cursor-pointer"
+                                className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow p-4 sm:p-8 flex flex-col sm:flex-row gap-4 sm:gap-10 items-center relative group cursor-pointer"
                                 onClick={() => navigate(`/gyms/${gym.gymId}`)}
                             >
-                                <div className="flex-shrink-0 w-40 h-40 bg-gray-100 flex items-center justify-center overflow-hidden rounded-xl">
+                                <div className="flex-shrink-0 w-full sm:w-40 h-40 bg-gray-100 flex items-center justify-center overflow-hidden rounded-xl">
                                     {gym.gymImage && gym.gymImage.length > 0 ? (
                                         <img src={gym.gymImage[0]} alt={gym.name} className="object-cover w-full h-full" />
                                     ) : (
                                         <span className="text-base text-gray-400">이미지 없음</span>
                                     )}
                                 </div>
-                                <div className="flex-1 min-w-0 flex flex-col gap-1 font-pretendard">
+                                <div className="flex-1 min-w-0 flex flex-col gap-1">
                                     <div className="text-lg font-medium text-gray-900 leading-tight mb-0.5">{gym.name}</div>
                                     <div className="text-sm text-gray-500 font-normal mb-0.5">{gym.address}</div>
                                     <div className="text-xs text-gray-400 font-light mb-0.5">운영시간: {formatTime(gym.openTime)} ~ {formatTime(gym.closeTime)}</div>
@@ -198,34 +215,38 @@ function Home() {
                                 <button
                                     className={`absolute top-5 right-5 text-3xl transition-transform duration-150 ${gym.isLiked ? 'scale-110' : 'scale-100'}`}
                                     onClick={e => { e.stopPropagation(); handleLike(gym.gymId); }}
-                                    aria-label="좋아요"
                                 >
-                                    {gym.isLiked ? (
-                                        <FaHeart className="text-pink-500 drop-shadow" />
-                                    ) : (
-                                        <FaRegHeart className="text-gray-300 group-hover:text-pink-400 transition-colors" />
-                                    )}
+                                    {gym.isLiked ? <FaHeart className="text-pink-500" /> : <FaRegHeart className="text-gray-300" />}
                                 </button>
                             </div>
                         ))}
                     </div>
                 </div>
-                {/* 오른쪽: 실시간 인기 + 광고 (col-span-1, 세로로 쌓임) */}
-                <div className="lg:col-span-1 col-span-1 flex flex-col gap-8">
-                  {/* 실시간 인기 체육관 */}
+                {/* 오른쪽: 인기 체육관 등 */}
+                <div className="col-span-1 flex flex-col gap-6">
+                  {/* 인기 체육관, 광고 등 여기에 반응형으로 배치 */}
+                  {/* 인기 체육관 */}
                   <div className="bg-white/90 rounded-2xl shadow-md flex flex-col items-center justify-center min-h-[200px] p-6">
-                    <div className="text-xl font-bold mb-3 text-purple-600">실시간 인기 체육관</div>
-                    <ul className="w-full space-y-2">
-                      {hotGyms.map((gym, idx) => (
-                        <li
-                          key={gym}
-                          className={`px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-all
-                            ${highlightIdx === idx ? 'bg-gradient-to-r from-pink-100 to-blue-100 text-blue-700 scale-105 shadow' : 'bg-gray-50 text-gray-700'}`}
-                        >
-                          <span className="text-base">{idx + 1}.</span> {gym}
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="text-xl font-bold mb-3 text-purple-600">인기 체육관</div>
+                    {isPopularLoading ? (
+                      <div className="text-gray-400">로딩 중...</div>
+                    ) : isPopularError ? (
+                      <div className="text-red-400">에러가 발생했습니다.</div>
+                    ) : popularGyms.length === 0 ? (
+                      <div className="text-gray-400">인기 체육관 데이터가 없습니다.</div>
+                    ) : (
+                      <ul className="w-full space-y-2">
+                        {popularGyms.map((gym, idx) => (
+                          <li
+                            key={gym}
+                            className={`px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-all
+                              ${highlightIdx === idx ? 'bg-gradient-to-r from-pink-100 to-blue-100 text-blue-700 scale-105 shadow' : 'bg-gray-50 text-gray-700'}`}
+                          >
+                            <span className="text-base">{idx + 1}.</span> {gym}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                   {/* 헬스용품 추천 광고 (흰색 배경) */}
                   <div className="bg-white rounded-2xl shadow-md flex flex-col items-center justify-center min-h-[200px] p-6">
