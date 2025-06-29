@@ -49,21 +49,27 @@ export default function Header() {
     window.location.href = '/'; // 강제 새로고침으로 토큰 무효화
   };
 
-  const navItems = [
-    { id: 'home', label: <><MdHome className="inline mb-1 mr-1 text-blue-500" />홈</>, to: '/home' },
-    { id: 'chat', label: <><MdChat className="inline mb-1 mr-1 text-blue-500" />채팅</>, to: '#', onClick: () => {
-      if (!isLoggedIn) { alert('로그인한 유저만 이용 가능합니다.'); return; }
-      alert('채팅 기능은 추후 추가 예정입니다.');
-    } },
-    { id: 'notification', label: <><MdNotifications className="inline mb-1 mr-1 text-pink-500" />알림</>, to: '#', onClick: () => {
-      if (!isLoggedIn) { alert('로그인한 유저만 이용 가능합니다.'); return; }
-      setShowNotification((v) => !v);
-    } },
-    { id: 'mypage', label: <><FaUserCircle className="inline mb-1 mr-1 text-gray-500" />마이페이지</>, to: '/mypage', onClick: () => {
-      if (!isLoggedIn) { alert('로그인한 유저만 이용 가능합니다.'); return; }
-      navigate('/mypage');
-    } },
-  ];
+  const navItems = isLoggedIn
+    ? [
+        { id: 'home', label: <><MdHome className="inline mb-1 mr-1 text-blue-500" />홈</>, to: '/home' },
+        { id: 'chat', label: <><MdChat className="inline mb-1 mr-1 text-blue-500" />채팅</>, to: '#', onClick: () => {
+          if (!isLoggedIn) { alert('로그인한 유저만 이용 가능합니다.'); return; }
+          alert('채팅 기능은 추후 추가 예정입니다.');
+        } },
+        { id: 'notification', label: <><MdNotifications className="inline mb-1 mr-1 text-pink-500" />알림</>, to: '#', onClick: () => {
+          if (!isLoggedIn) { alert('로그인한 유저만 이용 가능합니다.'); return; }
+          setShowNotification((v) => !v);
+        } },
+        { id: 'mypage', label: <><FaUserCircle className="inline mb-1 mr-1 text-gray-500" />마이페이지</>, to: '/mypage', onClick: () => {
+          if (!isLoggedIn) { alert('로그인한 유저만 이용 가능합니다.'); return; }
+          navigate('/mypage');
+        } },
+      ]
+    : [
+        { id: 'home', label: <><MdHome className="inline mb-1 mr-1 text-blue-500" />홈</>, to: '/home' },
+        { id: 'login', label: '로그인', to: '/login' },
+        { id: 'signup', label: '회원가입', to: '/signup' },
+      ];
 
   const actionButton = isLoggedIn
     ? { label: '로그아웃', onClick: handleLogout }
