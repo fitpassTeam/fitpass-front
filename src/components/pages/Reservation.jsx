@@ -19,10 +19,14 @@ function Reservation() {
   const [loading, setLoading] = useState(false);
   const [loadingTimes, setLoadingTimes] = useState(false);
   const [point, setPoint] = useState(null);
-  const [trainerPrice, setTrainerPrice] = useState(null);
   const [membershipPrice, setMembershipPrice] = useState(null);
   const [membershipInfo, setMembershipInfo] = useState(null);
   const [selectedTrainer, setSelectedTrainer] = useState(null);
+
+  // 페이지 진입 시 항상 맨 위로 스크롤
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   // 포인트 조회
   useEffect(() => {
@@ -36,10 +40,9 @@ function Reservation() {
     async function fetchTrainer() {
       try {
         const res = await getTrainerDetail({ gymId, trainerId });
-        setTrainerPrice(res.data?.data?.price || 0);
         setSelectedTrainer(res.data?.data);
       } catch {
-        setTrainerPrice(0);
+        // 무시
       }
     }
     if (gymId && trainerId) fetchTrainer();
@@ -140,6 +143,11 @@ function Reservation() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white p-6">
+      {/* 상단 뒤로가기/닫기 버튼 */}
+      <div className="w-full max-w-md flex justify-between items-center mb-2">
+        <button onClick={() => navigate(-1)} className="text-2xl text-gray-400 hover:text-blue-500 px-2" aria-label="뒤로가기">←</button>
+        <button onClick={() => navigate('/')} className="text-2xl text-gray-400 hover:text-pink-500 px-2" aria-label="닫기">×</button>
+      </div>
       <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full flex flex-col items-center">
         <h1 className="text-2xl font-bold mb-6 text-blue-600">
           {isTrainerMode ? '트레이너 예약' : '이용권 구매'}
