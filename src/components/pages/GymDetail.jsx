@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useQuery as useUserQuery } from '@tanstack/react-query';
 import { api } from '../../api/http';
+import ReservationModal from '../ReservationModal';
 // import Swiper 등 캐러셀 라이브러리 필요시 추가
 
 function formatTime(time) {
@@ -11,12 +13,15 @@ function formatTime(time) {
 }
 
 function GymDetail() {
-  const { gymId } = useParams();
+  const { gymId: paramGymId } = useParams();
   const navigate = useNavigate();
   const [selectedTrainerId, setSelectedTrainerId] = useState('');
   const [mainIdx, setMainIdx] = useState(0); // 대표 이미지 인덱스
   const [modalOpen, setModalOpen] = useState(false);
   const [mainTrainerImgIdx, setMainTrainerImgIdx] = useState(0);
+  const [reservationModalOpen, setReservationModalOpen] = useState(false);
+  const [reservationType, setReservationType] = useState(null); // 'membership' | 'trainer'
+  const [selectedMembershipId, setSelectedMembershipId] = useState(null);
   
   // 로그인 상태 확인
   const isLoggedIn = !!localStorage.getItem('token');
@@ -26,49 +31,103 @@ function GymDetail() {
     alert('로그인한 유저만 이용할 수 있습니다.');
   };
 
-  // 체육관 상세 (단일 상세 API가 없으면 기존 방식 유지)
+  // 체육관 상세 (상세조회 API 사용)
   const { data: gymData, isLoading: gymLoading } = useQuery({
-    queryKey: ['gym', gymId],
+    queryKey: ['gym', paramGymId],
     queryFn: async () => {
-      // 단일 상세 API가 있으면 아래로 교체
-      // return api.get(`/gyms/${gymId}`).then(res => res.data.data);
-      const res = await api.get('/gyms');
-      const gyms = res.data?.data?.content || res.data?.content || [];
-      const found = gyms.find(g => String(g.gymId) === String(gymId));
-      if (!found) throw new Error('Not found');
-      let gymImage = found.gymImage;
-      if (typeof gymImage === 'string') {
-        try { gymImage = JSON.parse(gymImage); } catch { gymImage = [gymImage]; }
-      }
-      return { ...found, gymImage };
+      // 상세조회 API로 교체
+      const res = await api.get(`/gyms/${paramGymId}`);
+      return res.data?.data;
     },
-    enabled: !!gymId,
+    enabled: !!paramGymId,
   });
 
   // 트레이너 목록
   const { data: trainers = [] } = useQuery({
-    queryKey: ['trainers', gymId],
+    queryKey: ['trainers', paramGymId],
     queryFn: async () => {
-      const res = await api.get(`/gyms/${gymId}/trainers`);
+      const res = await api.get(`/gyms/${paramGymId}/trainers`);
       const arr = Array.isArray(res.data.data?.content) ? res.data.data.content : (Array.isArray(res.data.data) ? res.data.data : []);
       return arr.map(tr => ({ ...tr, trainerImage: tr.images || [] }));
     },
-    enabled: !!gymId,
+    enabled: !!paramGymId,
   });
 
   // 이용권 목록
   const { data: memberships = [] } = useQuery({
-    queryKey: ['memberships', gymId],
+    queryKey: ['memberships', paramGymId],
     queryFn: async () => {
-      const res = await api.get(`/gyms/${gymId}/memberships`);
+      const res = await api.get(`/gyms/${paramGymId}/memberships`);
       return Array.isArray(res.data.data) ? res.data.data : (Array.isArray(res.data.data?.content) ? res.data.data.content : []);
     },
-    enabled: !!gymId,
+    enabled: !!paramGymId,
+  });
+
+  // 유저 정보 가져오기
+  const { data: userInfo } = useUserQuery({
+    queryKey: ['me'],
+    queryFn: async () => {
+      const res = await api.get('/users/me');
+      return res.data?.data;
+    },
+    enabled: !!isLoggedIn,
   });
 
   useEffect(() => { setMainIdx(0); }, [gymData]);
 
   const selectedTrainer = trainers.find(tr => String(tr.id) === String(selectedTrainerId));
+
+  // 문의하기 버튼 클릭 핸들러 (체육관 오너와 채팅)
+  const handleInquiry = async () => {
+    if (!isLoggedIn) {
+      showLoginAlert();
+      return;
+    }
+    if (!userInfo) {
+      alert('유저 정보를 불러오는 중입니다.');
+      return;
+    }
+    // gymData에서 id를 찾지 못하면 useParams의 paramGymId를 사용
+    const gymId = gymData?.id || gymData?.gymId || gymData?._id || paramGymId;
+    if (!gymId) {
+      alert('체육관 정보가 올바르지 않습니다.');
+      return;
+    }
+    try {
+      const res = await api.get(`/ws/chatRooms?userId=${userInfo.id}&userType=${userInfo.userRole}`);
+      const chatRooms = Array.isArray(res.data?.data) ? res.data.data : [];
+      const existRoom = chatRooms.find(room => String(room.userId) === String(userInfo.id) && String(room.gymId) === String(gymId));
+      if (existRoom) {
+        navigate(`/chat/${existRoom.chatRoomId}`);
+        return;
+      }
+      const createRes = await api.post(`/ws/chatRooms?userId=${userInfo.id}&gymId=${gymId}`);
+      const chatRoomId = createRes.data.data.chatRoomId;
+      navigate(`/chat/${chatRoomId}`);
+    } catch {
+      alert('채팅방 생성/조회에 실패했습니다.');
+    }
+  };
+
+  // 이용권 구매 모달 오픈
+  const handleOpenMembershipModal = (membershipId) => {
+    setReservationType('membership');
+    setSelectedMembershipId(membershipId);
+    setReservationModalOpen(true);
+  };
+  // 트레이너 예약 모달 오픈
+  const handleOpenTrainerModal = (trainerId) => {
+    setReservationType('trainer');
+    setSelectedTrainerId(trainerId);
+    setReservationModalOpen(true);
+  };
+  // 모달 닫기
+  const handleCloseReservationModal = () => {
+    setReservationModalOpen(false);
+    setReservationType(null);
+    setSelectedMembershipId(null);
+    setSelectedTrainerId(null);
+  };
 
   if (gymLoading) return <div className="text-center py-20 text-xl text-blue-400 animate-pulse">로딩 중...</div>;
   if (!gymData) return <div className="text-center py-20 text-xl text-red-400">체육관 정보를 불러올 수 없습니다.</div>;
@@ -102,7 +161,17 @@ function GymDetail() {
         {/* 오른쪽: 체육관 정보 */}
         <div className="md:w-1/2 w-full flex flex-col gap-4 justify-between">
           <div>
-            <div className="text-3xl font-extrabold mb-2">{gymData.name}</div>
+            <div className="text-3xl font-extrabold mb-2 flex items-center gap-2 flex-wrap">
+              <span>{gymData.name}</span>
+              {isLoggedIn && gymData.ownerId && (
+                <button
+                  className="ml-2 px-4 py-2 bg-blue-500 text-white rounded-full font-bold shadow hover:bg-blue-600 transition text-base"
+                  onClick={handleInquiry}
+                >
+                  문의하기
+                </button>
+              )}
+            </div>
             <div className="text-gray-600 mb-1">{gymData.address}</div>
             <div className="text-blue-500 font-semibold mb-2">{gymData.summary}</div>
             <div className="text-gray-700 mb-4 whitespace-pre-line">{gymData.content}</div>
@@ -130,7 +199,7 @@ function GymDetail() {
                 </div>
                 <button
                   className="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition"
-                  onClick={e => { e.stopPropagation(); if (!isLoggedIn) { showLoginAlert(); return; } navigate(`/reservation?type=trainer&gymId=${gymId}&trainerId=${tr.id}`); }}
+                  onClick={e => { e.stopPropagation(); if (!isLoggedIn) { showLoginAlert(); return; } handleOpenTrainerModal(tr.id); }}
                 >
                   예약하기
                 </button>
@@ -204,7 +273,7 @@ function GymDetail() {
                   </div>
                   <button
                     className="w-full bg-blue-500 text-white font-bold py-3 rounded-lg hover:bg-blue-600 transition text-lg mt-2"
-                    onClick={() => { setModalOpen(false); setMainTrainerImgIdx(0); if (!isLoggedIn) { showLoginAlert(); return; } navigate(`/reservation?type=trainer&gymId=${gymId}&trainerId=${selectedTrainer.id}`); }}
+                    onClick={() => { setModalOpen(false); setMainTrainerImgIdx(0); if (!isLoggedIn) { showLoginAlert(); return; } handleOpenTrainerModal(selectedTrainer.id); }}
                   >
                     트레이너 예약하기
                   </button>
@@ -233,7 +302,7 @@ function GymDetail() {
                 <div className="text-gray-700 mb-2 whitespace-pre-line">{mb.content}</div>
                 <button
                   className="w-full bg-purple-500 text-white font-bold py-2 rounded-lg hover:bg-purple-600 transition"
-                  onClick={() => { if (!isLoggedIn) { showLoginAlert(); return; } navigate(`/reservation?type=membership&gymId=${gymId}&membershipId=${mb.id}`); }}
+                  onClick={() => { if (!isLoggedIn) { showLoginAlert(); return; } handleOpenMembershipModal(mb.id); }}
                 >
                   이용권 구매하기
                 </button>
@@ -242,6 +311,17 @@ function GymDetail() {
           </div>
         </div>
       </div>
+      {/* ReservationModal 모달 */}
+      {reservationModalOpen && (
+        <ReservationModal
+          open={reservationModalOpen}
+          onClose={handleCloseReservationModal}
+          type={reservationType}
+          gymId={paramGymId}
+          membershipId={selectedMembershipId}
+          trainerId={selectedTrainerId}
+        />
+      )}
     </div>
   );
 }

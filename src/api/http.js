@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../api-config';
 
-function create(baseURL, options) {
+function create(baseURL = API_BASE_URL, options) {
   const instance = axios.create({
     baseURL,
     ...options,
@@ -75,7 +76,7 @@ function create(baseURL, options) {
   return instance;
 }
 
-export const api = create(import.meta.env.VITE_API_BASE_URL);
+export const api = create(API_BASE_URL);
 
 // 비밀번호 확인 API
 export const checkPassword = async (password) => {

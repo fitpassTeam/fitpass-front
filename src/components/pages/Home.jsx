@@ -1,11 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getGyms, getSearchGyms, toggleLikeGym, getPopularGyms } from '../../api/gyms';
 import SearchBar from '../SearchBar';
 import { FaHeart, FaRegHeart } from 'react-icons/fa';
 import '../../index.css'; // Tailwind custom keyframes 적용을 위해
 import addressData from '../../assets/addressData';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery as useQueryPopular } from '@tanstack/react-query';
 import logo from '../../assets/logo.jpg';
 
@@ -16,8 +16,9 @@ function formatTime(timeStr) {
 }
 
 function Home() {
+    const [searchParams, setSearchParams] = useSearchParams();
+    
     // draft 상태: 입력값만 관리
-    // const [draftSearchText, setDraftSearchText] = useState('');
     const [draftCity, setDraftCity] = useState('');
     const [draftDistrict, setDraftDistrict] = useState('');
     // 실제 검색에 사용되는 상태
@@ -29,19 +30,32 @@ function Home() {
     const isLoggedIn = !!localStorage.getItem('token');
     const navigate = useNavigate();
 
+    // URL 쿼리스트링에서 초기 상태 복원
+    useEffect(() => {
+        const keyword = searchParams.get('keyword') || '';
+        const city = searchParams.get('city') || '';
+        const district = searchParams.get('district') || '';
+        
+        setSearchText(keyword);
+        setSelectedCity(city);
+        setSelectedDistrict(district);
+        setDraftCity(city);
+        setDraftDistrict(district);
+    }, [searchParams]);
+
     // 드롭다운 데이터
     const cities = Object.keys(addressData);
     const districts = draftCity ? addressData[draftCity] : [];
 
     // 검색 파라미터
-    const searchParams = useMemo(() => ({
+    const searchParamsForQuery = useMemo(() => ({
         page,
         size: 10,
         keyword: searchText ? searchText : undefined,
         city: selectedCity ? selectedCity : undefined,
         district: selectedDistrict ? selectedDistrict : undefined,
     }), [page, searchText, selectedCity, selectedDistrict]);
-    const isSearch = useMemo(() => !!(searchParams.keyword || searchParams.city || searchParams.district), [searchParams]);
+    const isSearch = useMemo(() => !!(searchParamsForQuery.keyword || searchParamsForQuery.city || searchParamsForQuery.district), [searchParamsForQuery]);
 
     // 검색/전체 API 분기
     const { data, isLoading, isError } = useQuery({
@@ -55,7 +69,7 @@ function Home() {
         ],
         queryFn: () => {
             if (isSearch) {
-                return getSearchGyms(searchParams).then(res => res.data.data);
+                return getSearchGyms(searchParamsForQuery).then(res => res.data.data);
             } else {
                 return getGyms({ page, size: 10 }).then(res => res.data.data);
             }
@@ -114,11 +128,24 @@ function Home() {
 
     // 검색 버튼 클릭 시에만 실제 검색 실행
     const handleSearch = (val, city, district) => {
-        setSearchText(val !== undefined ? val : searchText);
-        setSelectedCity(city !== undefined ? city : selectedCity);
-        setSelectedDistrict(district !== undefined ? district : selectedDistrict);
+        const newSearchText = val !== undefined ? val : searchText;
+        const newCity = city !== undefined ? city : selectedCity;
+        const newDistrict = district !== undefined ? district : selectedDistrict;
+        
+        setSearchText(newSearchText);
+        setSelectedCity(newCity);
+        setSelectedDistrict(newDistrict);
         setPage(0);
+        
+        // URL 쿼리스트링 업데이트
+        const params = {};
+        if (newSearchText) params.keyword = newSearchText;
+        if (newCity) params.city = newCity;
+        if (newDistrict) params.district = newDistrict;
+        
+        setSearchParams(params, { replace: true });
     };
+    
     // 드롭다운/검색바는 draft만 변경
     const handleCityChange = (e) => {
         const city = e.target.value;
@@ -127,49 +154,65 @@ function Home() {
         setSelectedCity(city);
         setSelectedDistrict('');
         setPage(0);
+        
+        // URL 쿼리스트링 업데이트
+        const params = {};
+        if (searchText) params.keyword = searchText;
+        if (city) params.city = city;
+        setSearchParams(params, { replace: true });
     };
+    
     const handleDistrictChange = (e) => {
         const district = e.target.value;
         setDraftDistrict(district);
         setSelectedDistrict(district);
         setPage(0);
+        
+        // URL 쿼리스트링 업데이트
+        const params = {};
+        if (searchText) params.keyword = searchText;
+        if (selectedCity) params.city = selectedCity;
+        if (district) params.district = district;
+        setSearchParams(params, { replace: true });
     };
 
     return (
         <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
             {/* 상단: 검색바 */}
-            <div className="flex flex-col sm:flex-row justify-center mb-8 w-full gap-2">
-                <div className="w-full flex flex-row gap-2 items-center justify-center">
-                    <SearchBar
-                        searchText={searchText}
-                        onSearch={val => handleSearch(val, draftCity, draftDistrict)}
-                        logo={logo}
-                    />
-                    <select
-                        name="city"
-                        value={draftCity}
-                        onChange={handleCityChange}
-                        className="border-2 border-blue-400 focus:border-blue-500 bg-white rounded-full px-3 py-2 outline-none min-w-[120px] w-auto h-14 text-base font-semibold max-w-xs"
-                        style={{ marginLeft: 8 }}
-                    >
-                        <option value="">시/도</option>
-                        {cities.map(city => (
-                            <option key={city} value={city}>{city}</option>
-                        ))}
-                    </select>
-                    <select
-                        name="district"
-                        value={draftDistrict}
-                        onChange={handleDistrictChange}
-                        className="border-2 border-blue-400 focus:border-blue-500 bg-white rounded-full px-3 py-2 outline-none min-w-[120px] w-auto h-14 text-base font-semibold max-w-xs"
-                        style={{ marginLeft: 8 }}
-                        disabled={!draftCity}
-                    >
-                        <option value="">시/군/구</option>
-                        {districts.map(district => (
-                            <option key={district} value={district}>{district}</option>
-                        ))}
-                    </select>
+            <div className="flex flex-col sm:flex-row justify-center mb-8 w-full gap-2 sm:gap-4">
+                <div className="w-full flex flex-col sm:flex-row gap-2 sm:gap-3 items-center justify-center">
+                    <div className="w-full sm:flex-1">
+                        <SearchBar
+                            searchText={searchText}
+                            onSearch={val => handleSearch(val, draftCity, draftDistrict)}
+                            logo={logo}
+                        />
+                    </div>
+                    <div className="w-full sm:w-auto flex gap-2 sm:gap-3">
+                        <select
+                            name="city"
+                            value={draftCity}
+                            onChange={handleCityChange}
+                            className="flex-1 sm:flex-none border-2 border-blue-400 focus:border-blue-500 bg-white rounded-full px-3 py-2 sm:py-3 outline-none min-w-[120px] w-auto h-10 sm:h-12 text-sm sm:text-base font-semibold max-w-xs"
+                        >
+                            <option value="">시/도</option>
+                            {cities.map(city => (
+                                <option key={city} value={city}>{city}</option>
+                            ))}
+                        </select>
+                        <select
+                            name="district"
+                            value={draftDistrict}
+                            onChange={handleDistrictChange}
+                            className="flex-1 sm:flex-none border-2 border-blue-400 focus:border-blue-500 bg-white rounded-full px-3 py-2 sm:py-3 outline-none min-w-[120px] w-auto h-10 sm:h-12 text-sm sm:text-base font-semibold max-w-xs"
+                            disabled={!draftCity}
+                        >
+                            <option value="">시/군/구</option>
+                            {districts.map(district => (
+                                <option key={district} value={district}>{district}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
             </div>
             {/* 중단: 본문 그리드 (반응형) */}

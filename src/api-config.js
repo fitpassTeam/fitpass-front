@@ -1,4 +1,5 @@
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+// 환경변수에서 API BASE URL을 불러옵니다. (Vite 환경)
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 export function socialLogin(provider) {
   if (provider === 'naver') {
