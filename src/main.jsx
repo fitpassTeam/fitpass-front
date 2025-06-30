@@ -20,6 +20,7 @@ import TrainerRegister from './components/pages/TrainerRegister';
 import MembershipManagement from './components/pages/MembershipManagement';
 import Reservation from './components/pages/Reservation';
 import ReservationManagement from './components/pages/ReservationManagement';
+import ChatRoomPage from './components/pages/ChatRoomPage';
 
 const queryClient = new QueryClient();
 
@@ -43,6 +44,7 @@ const router = createBrowserRouter([
       { path: 'membership-management', element: <MembershipManagement /> },
       { path: 'reservation', element: <Reservation /> },
       { path: 'reservation-management', element: <ReservationManagement /> },
+      { path: 'chat/:chatRoomId', element: <ChatRoomPage /> },
       // {
       //   path: '/fitness-goals/{fitnessGoalId}/daily-records',
       //   element: <GoalDetail />,

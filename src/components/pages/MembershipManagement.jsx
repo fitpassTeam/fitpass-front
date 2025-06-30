@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Select from 'react-select';
 import { getMyGyms } from '../../api/gyms';
-import { API_BASE_URL } from '../../api-config';
+import { api } from '../../api/http';
 
 function MembershipManagement() {
   const [mode, setMode] = useState('register'); // 'register' | 'edit' | 'delete' | 'reservation'
@@ -26,15 +26,9 @@ function MembershipManagement() {
   // 체육관 선택 시 해당 체육관의 이용권 목록 불러오기 (수정/삭제)
   useEffect(() => {
     if ((mode === 'edit' || mode === 'delete') && selectedGym) {
-      const token = localStorage.getItem('token');
-      fetch(`${API_BASE_URL}/gyms/${selectedGym.value}/memberships`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
-        .then(res => res.json())
-        .then(data => {
-          setMemberships(Array.isArray(data.data) ? data.data : (Array.isArray(data.data?.content) ? data.data.content : []));
+      api.get(`/gyms/${selectedGym.value}/memberships`)
+        .then(res => {
+          setMemberships(Array.isArray(res.data.data) ? res.data.data : (Array.isArray(res.data.data?.content) ? res.data.data.content : []));
         });
     } else {
       setMemberships([]);
@@ -62,12 +56,9 @@ function MembershipManagement() {
     if (mode === 'reservation' && selectedGym) {
       setLoadingReservations(true);
       setReservationError('');
-      fetch(`${API_BASE_URL}/gyms/${selectedGym.value}/trainer-reservations`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-      })
-        .then(res => res.json())
-        .then(data => {
-          setReservations(Array.isArray(data.data) ? data.data : (Array.isArray(data.data?.content) ? data.data.content : []));
+      api.get(`/gyms/${selectedGym.value}/trainer-reservations`)
+        .then(res => {
+          setReservations(Array.isArray(res.data.data) ? res.data.data : (Array.isArray(res.data.data?.content) ? res.data.data.content : []));
         })
         .catch(() => setReservationError('예약 목록을 불러오지 못했습니다.'))
         .finally(() => setLoadingReservations(false));
@@ -89,22 +80,13 @@ function MembershipManagement() {
       return;
     }
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE_URL}/gyms/${selectedGym.value}/memberships`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: form.name,
-          price: Number(form.price),
-          content: form.content,
-          durationInDays: Number(form.durationInDays),
-        }),
+      const res = await api.post(`/gyms/${selectedGym.value}/memberships`, {
+        name: form.name,
+        price: Number(form.price),
+        content: form.content,
+        durationInDays: Number(form.durationInDays),
       });
-      const data = await res.json();
-      if (data.statusCode === 201) {
+      if (res.data.statusCode === 201) {
         alert('이용권 등록이 완료되었습니다!');
         setForm({ name: '', price: '', content: '', durationInDays: '' });
       } else {
@@ -124,40 +106,21 @@ function MembershipManagement() {
       return;
     }
     try {
-      const token = localStorage.getItem('token');
-      const url = `${API_BASE_URL}/gyms/${selectedGym.value}/memberships/${selectedMembership.id}`;
-      const body = {
+      const res = await api.patch(`/gyms/${selectedGym.value}/memberships/${selectedMembership.id}`, {
         name: form.name,
         price: Number(form.price),
         content: form.content,
         durationInDays: Number(form.durationInDays),
-      };
-      console.log('PATCH URL:', url);
-      console.log('PATCH body:', body);
-      const res = await fetch(url, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
       });
-      const data = await res.json();
-      console.log('PATCH 응답:', data);
-      if (data.statusCode === 200 || data.statusCode === 201) {
+      if (res.data.statusCode === 200 || res.data.statusCode === 201) {
         alert('이용권 정보가 수정되었습니다!');
         setForm({ name: '', price: '', content: '', durationInDays: '' });
         setSelectedMembership(null);
         // memberships 목록 새로고침
-        if (selectedGym) {
-          fetch(`${API_BASE_URL}/gyms/${selectedGym.value}/memberships`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-          })
-            .then(res => res.json())
-            .then(data => {
-              setMemberships(Array.isArray(data.data) ? data.data : (Array.isArray(data.data?.content) ? data.data.content : []));
-            });
-        }
+        api.get(`/gyms/${selectedGym.value}/memberships`)
+          .then(res => {
+            setMemberships(Array.isArray(res.data.data) ? res.data.data : (Array.isArray(res.data.data?.content) ? res.data.data.content : []));
+          });
       } else {
         setError('이용권 수정에 실패했습니다.');
       }
@@ -176,27 +139,16 @@ function MembershipManagement() {
     }
     if (!window.confirm('정말로 이 이용권을 삭제하시겠습니까?')) return;
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE_URL}/gyms/${selectedGym.value}/memberships/${selectedMembership.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      if (res.ok) {
+      const res = await api.delete(`/gyms/${selectedGym.value}/memberships/${selectedMembership.id}`);
+      if (res.status === 200) {
         alert('이용권이 삭제되었습니다!');
         setSelectedMembership(null);
         setForm({ name: '', price: '', content: '', durationInDays: '' });
         // memberships 목록 새로고침
-        if (selectedGym) {
-          fetch(`${API_BASE_URL}/gyms/${selectedGym.value}/memberships`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-          })
-            .then(res => res.json())
-            .then(data => {
-              setMemberships(Array.isArray(data.data) ? data.data : (Array.isArray(data.data?.content) ? data.data.content : []));
-            });
-        }
+        api.get(`/gyms/${selectedGym.value}/memberships`)
+          .then(res => {
+            setMemberships(Array.isArray(res.data.data) ? res.data.data : (Array.isArray(res.data.data?.content) ? res.data.data.content : []));
+          });
       } else {
         setError('이용권 삭제에 실패했습니다.');
       }
@@ -208,21 +160,10 @@ function MembershipManagement() {
   // 예약 승인/거절 핸들러
   const handleReservationAction = async (reservationId, status) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/reservations/${reservationId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({ status }),
-      });
-      if (res.ok) {
-        setReservations(prev => prev.map(r => r.id === reservationId ? { ...r, status } : r));
-      } else {
-        alert('처리 실패!');
-      }
+      await api.patch(`/reservations/${reservationId}`, { status });
+      setReservations(prev => prev.map(r => r.id === reservationId ? { ...r, status } : r));
     } catch {
-      alert('네트워크 오류!');
+      alert('처리 실패!');
     }
   };
 

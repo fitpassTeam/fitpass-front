@@ -47,15 +47,9 @@ function ReservationManagement() {
   const handleReservationAction = async (reservation, action) => {
     if (!selectedGym) return;
     const gymId = selectedGym.value;
-    // 디버깅용 콘솔
-    console.log('=== 예약 승인/거절 시도 ===');
-    console.log('reservation:', reservation);
-    // 다양한 필드명 시도
     const trainerId = reservation.trainerId || reservation.trainer_id || reservation.trainer?.id || reservation.trainerId || reservation.trainer_id;
     const reservationId = reservation.id || reservation.reservationId || reservation.reservation_id;
-    console.log('gymId:', gymId, 'trainerId:', trainerId, 'reservationId:', reservationId, 'action:', action);
     const url = `/gyms/${gymId}/trainers/${trainerId}/reservations/${reservationId}/${action}`;
-    console.log('최종 요청 URL:', url);
     if (!gymId || !trainerId || !reservationId) {
       alert('필수 정보 누락');
       return;

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { EventSourcePolyfill } from 'event-source-polyfill';
+import { API_BASE_URL } from '../api-config';
 
 export default function useSseSubscribe(onMessage) {
   useEffect(() => {
@@ -7,7 +8,7 @@ export default function useSseSubscribe(onMessage) {
     if (!token) return;
 
     const eventSource = new EventSourcePolyfill(
-      `${import.meta.env.VITE_API_BASE_URL}/notify/subscribe`,
+      `${API_BASE_URL}/notify/subscribe`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
