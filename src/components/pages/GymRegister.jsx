@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import addressData from '../../assets/addressData';
 import Select from 'react-select';
 import { registerGym, getMyGyms, updateGym, deleteGym } from '../../api/gyms';
-import { API_BASE_URL } from '../../api-config';
+import { api } from '../../api/http';
 
 // 임시: 실제로는 로그인 유저의 권한을 받아와야 함
 const mockUser = {
@@ -103,16 +103,9 @@ function GymRegister() {
     const formData = new FormData();
     files.forEach(file => formData.append('images', file));
     try {
-      const token = localStorage.getItem('token');
       // 여러 장 업로드 API 호출
-      const res = await fetch(`${API_BASE_URL}/images/multi`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
-      });
-      const data = await res.json();
+      const res = await api.post(`/images/multi`, formData);
+      const data = res.data;
       if (data.statusCode === 200 && Array.isArray(data.data)) {
         setImageUrls(prev => [...prev, ...data.data]);
         setForm(prev => ({ ...prev, gymImage: [...prev.gymImage, ...data.data] }));
@@ -128,14 +121,8 @@ function GymRegister() {
   const handleImageDelete = async (url) => {
     if (!window.confirm('이 이미지를 삭제하시겠습니까?')) return;
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE_URL}/images?images=${encodeURIComponent(url)}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      if (res.ok) {
+      const res = await api.delete(`/images?images=${encodeURIComponent(url)}`);
+      if (res.status === 200) {
         setImageUrls(prev => prev.filter(img => img !== url));
         setForm(prev => ({ ...prev, gymImage: prev.gymImage.filter(img => img !== url) }));
       } else {
@@ -164,8 +151,6 @@ function GymRegister() {
       ...gym,
     };
   });
-  console.log('gymOptions:', gymOptions);
-  console.log('selectedGym:', selectedGym);
 
   // 드롭다운에서 선택 시 localStorage에 저장
   const handleGymSelect = (option) => {

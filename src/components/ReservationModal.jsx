@@ -1,18 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { createTrainerReservation, getTrainerReservations, getTrainerDetail } from '../../api/reservation';
-import { getMyPoint } from '../../api/user';
-import { api } from '../../api/http';
+import { createTrainerReservation, getTrainerReservations, getTrainerDetail } from '../api/reservation';
+import { getMyPoint } from '../api/user';
+import { api } from '../api/http';
 import { useQuery as useUserQuery } from '@tanstack/react-query';
+import PropTypes from 'prop-types';
 
-function Reservation() {
-  const [params] = useSearchParams();
-  const gymId = params.get('gymId');
-  const trainerId = params.get('trainerId');
-  const membershipId = params.get('membershipId');
-  const type = params.get('type'); // 'trainer' | 'membership'
-  const navigate = useNavigate();
-
+export default function ReservationModal({ open, onClose, type, gymId, membershipId, trainerId }) {
   const [date, setDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [availableTimes, setAvailableTimes] = useState([]);
@@ -34,19 +27,13 @@ function Reservation() {
     enabled: !!localStorage.getItem('token'),
   });
 
-  // 페이지 진입 시 항상 맨 위로 스크롤
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-
-  // 포인트 조회
-  useEffect(() => {
+    if (!open) return;
     getMyPoint()
       .then(res => setPoint(res.data?.data?.balance))
       .catch(() => setPoint(null));
-  }, []);
+  }, [open]);
 
-  // 트레이너 정보 조회
   useEffect(() => {
     async function fetchTrainer() {
       try {
@@ -56,10 +43,9 @@ function Reservation() {
         // 무시
       }
     }
-    if (gymId && trainerId) fetchTrainer();
-  }, [gymId, trainerId]);
+    if (open && gymId && trainerId && type === 'trainer') fetchTrainer();
+  }, [open, gymId, trainerId, type]);
 
-  // 이용권 정보 조회
   useEffect(() => {
     async function fetchMembership() {
       try {
@@ -72,15 +58,14 @@ function Reservation() {
         setMembershipInfo(null);
       }
     }
-    if (gymId && membershipId) fetchMembership();
-  }, [gymId, membershipId]);
+    if (open && gymId && membershipId && type === 'membership') fetchMembership();
+  }, [open, gymId, membershipId, type]);
 
   // 날짜 선택 시 예약된 시간 조회 (트레이너 예약만)
   const handleDateChange = async (e) => {
     const selectedDate = e.target.value;
     setDate(selectedDate);
     setSelectedTime('');
-    
     if (type === 'trainer') {
       setAvailableTimes(['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00']);
       setReservedTimes([]);
@@ -88,10 +73,9 @@ function Reservation() {
       setLoadingTimes(true);
       try {
         const res = await getTrainerReservations({ gymId, trainerId });
-        // 예약 리스트에서 해당 날짜의 예약만 추출
         const reserved = (res.data?.data || [])
           .filter(r => r.reservationDate === selectedDate && (r.status === 'COMPLETED' || r.status === 'CONFIRMED' || r.status === 'PENDING'))
-          .map(r => r.reservationTime.slice(0, 5)); // '09:00:00' -> '09:00'
+          .map(r => r.reservationTime.slice(0, 5));
         setReservedTimes(reserved);
       } catch {
         setReservedTimes([]);
@@ -101,12 +85,10 @@ function Reservation() {
     }
   };
 
-  // 날짜 제한 계산 (구매 시점부터 7일)
   const getMinDate = () => {
     const today = new Date();
     return today.toISOString().split('T')[0];
   };
-
   const getMaxDate = () => {
     const today = new Date();
     const maxDate = new Date(today);
@@ -117,7 +99,6 @@ function Reservation() {
   const handleReserve = async () => {
     if (type === 'trainer' && (!date || !selectedTime)) return;
     if (type === 'membership' && !date) return;
-    
     setLoading(true);
     try {
       if (type === 'trainer') {
@@ -130,24 +111,18 @@ function Reservation() {
       } else if (type === 'membership') {
         await api.post(`/gyms/${gymId}/memberships/${membershipId}/purchase?activationDate=${date}`);
       }
-      
-      // 예약/구매 후 포인트 재조회
       const res = await getMyPoint();
       setPoint(res.data?.data?.balance);
-      // 예약 성공 시 채팅방 생성
       if (userInfo && gymId) {
         try {
           await api.post(`/ws/chatRooms?userId=${userInfo.id}&gymId=${gymId}`);
-          // chatRes.data.data.chatRoomId 활용 가능 (필요시)
         } catch {
-          // 채팅방 생성 실패는 무시 (알림만)
           alert('채팅방 자동 생성에 실패했습니다.');
         }
       }
       alert(type === 'trainer' ? '예약이 완료되었습니다!' : '이용권 구매가 완료되었습니다!');
-      navigate('/mypage');
+      onClose();
     } catch (e) {
-      // 에러 응답에서 message 추출
       let msg = type === 'trainer' ? '예약에 실패했습니다. 다시 시도해주세요.' : '이용권 구매에 실패했습니다. 다시 시도해주세요.';
       if (e.response && e.response.data && e.response.data.message) {
         msg = e.response.data.message;
@@ -161,18 +136,16 @@ function Reservation() {
   const isTrainerMode = type === 'trainer';
   const isMembershipMode = type === 'membership';
 
+  if (!open) return null;
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-white p-6">
-      {/* 상단 뒤로가기/닫기 버튼 */}
-      <div className="w-full max-w-md flex justify-between items-center mb-2">
-        <button onClick={() => navigate(-1)} className="text-2xl text-gray-400 hover:text-blue-500 px-2" aria-label="뒤로가기">←</button>
-        <button onClick={() => navigate('/')} className="text-2xl text-gray-400 hover:text-pink-500 px-2" aria-label="닫기">×</button>
-      </div>
-      <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full flex flex-col items-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+      <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full flex flex-col items-center relative animate-fadeIn">
+        {/* 닫기 버튼 */}
+        <button onClick={onClose} className="absolute top-4 right-4 text-2xl text-gray-400 hover:text-pink-500 px-2" aria-label="닫기">×</button>
         <h1 className="text-2xl font-bold mb-6 text-blue-600">
           {isTrainerMode ? '트레이너 예약' : '이용권 구매'}
         </h1>
-        
         {/* 트레이너 정보 표시 */}
         {isTrainerMode && selectedTrainer && (
           <div className="w-full mb-6 p-4 bg-white border border-gray-200 rounded-lg">
@@ -221,7 +194,6 @@ function Reservation() {
               }P</>
           }
         </div>
-        
         <div className="w-full mb-6">
           <div className="font-bold mb-2">
             {isMembershipMode ? '구매 날짜 선택 (7일 이내)' : '날짜 선택'}
@@ -240,7 +212,6 @@ function Reservation() {
             </div>
           )}
         </div>
-        
         {/* 시간 선택 (트레이너 예약만) */}
         {isTrainerMode && (
           <div className="w-full mb-6">
@@ -269,7 +240,6 @@ function Reservation() {
             </div>
           </div>
         )}
-        
         <button
           className={`w-full bg-blue-500 text-white font-bold py-3 rounded-lg hover:bg-blue-600 transition text-lg mt-2 ${
             (isTrainerMode && (!date || !selectedTime)) || (isMembershipMode && !date) || loading 
@@ -285,4 +255,11 @@ function Reservation() {
   );
 }
 
-export default Reservation; 
+ReservationModal.propTypes = {
+  open: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  type: PropTypes.string.isRequired,
+  gymId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  membershipId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  trainerId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+}; 

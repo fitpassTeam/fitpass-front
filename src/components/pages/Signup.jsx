@@ -150,9 +150,10 @@ function Signup() {
                     <Select
                       options={cityOptions}
                       value={cityOptions.find(opt => opt.value === form.city) || null}
-                      onChange={option => setForm(prev => ({ ...prev, city: option.value, district: '' }))}
+                      onChange={option => setForm(prev => ({ ...prev, city: option ? option.value : '', district: '' }))}
                       placeholder="시/도 선택"
                       isClearable
+                      menuPlacement="bottom"
                     />
                   </div>
                   <div className="w-1/2">
@@ -163,6 +164,7 @@ function Signup() {
                       placeholder="시/군/구 선택"
                       isDisabled={!form.city}
                       isClearable
+                      menuPlacement="bottom"
                     />
                   </div>
                 </div>
