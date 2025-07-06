@@ -172,14 +172,27 @@ function MembershipManagement() {
   const membershipOptions = memberships.map(m => ({ value: m.id, label: m.name, ...m }));
 
   return (
-    <div className="max-w-xl mx-auto bg-white/90 p-10 rounded-2xl shadow-2xl mt-12 flex flex-col items-center">
-      <h1 className="text-3xl font-extrabold mb-6 text-center bg-gradient-to-r from-blue-500 to-purple-500 text-transparent bg-clip-text drop-shadow">
-        이용권 관리
-      </h1>
-      <div className="flex gap-2 mb-6">
-        <button type="button" className={`px-4 py-2 rounded font-bold ${mode === 'register' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`} onClick={() => setMode('register')}>등록</button>
-        <button type="button" className={`px-4 py-2 rounded font-bold ${mode === 'edit' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`} onClick={() => setMode('edit')}>수정</button>
-        <button type="button" className={`px-4 py-2 rounded font-bold ${mode === 'delete' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`} onClick={() => setMode('delete')}>삭제</button>
+    <div className="max-w-3xl mx-auto mt-10 p-6 bg-white rounded-2xl shadow-xl">
+      <h1 className="text-2xl font-bold mb-6 text-center">이용권 관리</h1>
+      <div className="flex gap-4 justify-center mb-8">
+        <button
+          className={`px-6 py-2 rounded-full font-bold text-lg shadow transition border-2 ${mode === 'register' ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-blue-500 border-blue-200 hover:bg-blue-50'}`}
+          onClick={() => setMode('register')}
+        >
+          이용권 등록
+        </button>
+        <button
+          className={`px-6 py-2 rounded-full font-bold text-lg shadow transition border-2 ${mode === 'edit' ? 'bg-purple-500 text-white border-purple-500' : 'bg-white text-purple-500 border-purple-200 hover:bg-purple-50'}`}
+          onClick={() => setMode('edit')}
+        >
+          이용권 수정
+        </button>
+        <button
+          className={`px-6 py-2 rounded-full font-bold text-lg shadow transition border-2 ${mode === 'delete' ? 'bg-red-500 text-white border-red-500' : 'bg-white text-red-500 border-red-200 hover:bg-red-50'}`}
+          onClick={() => setMode('delete')}
+        >
+          이용권 삭제
+        </button>
       </div>
       {mode === 'reservation' ? (
         <div className="w-full">

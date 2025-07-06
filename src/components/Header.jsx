@@ -9,14 +9,13 @@ import useSseSubscribe from '../hooks/useSseSubscribe';
 import { api } from '../api/http';
 
 export default function Header() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
   const [showChatRooms, setShowChatRooms] = useState(false);
   const [chatRooms, setChatRooms] = useState([]);
   const [userInfo, setUserInfo] = useState(null);
-  const [chatRoomNames, setChatRoomNames] = useState({}); // {chatRoomId: 상대방이름}
-  const [chatRoomImages, setChatRoomImages] = useState({}); // {chatRoomId: 이미지URL}
+  const [chatRoomNames, setChatRoomNames] = useState({});
+  const [chatRoomImages, setChatRoomImages] = useState({});
   const navigate = useNavigate();
   const { notifications, addNotification, unreadCount, markAsRead } = useNotification();
 
@@ -25,110 +24,154 @@ export default function Header() {
     addNotification(notification);
   });
 
-  // localStorage의 token으로 로그인 상태 판단
+  // 토큰이 바뀔 때마다 userInfo를 새로 불러오게 (storage 이벤트 + polling)
   useEffect(() => {
-    const checkLogin = async () => {
+    const fetchUser = () => {
       const token = localStorage.getItem('token');
-      setIsLoggedIn(!!token);
       if (token) {
-        try {
-          const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/me`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (!res.ok) throw new Error('토큰 만료 또는 서버 오류');
-        } catch {
-          localStorage.removeItem('token');
-          localStorage.removeItem('refreshToken');
-          setIsLoggedIn(false);
-        }
+        api.get('/users/me').then(res => setUserInfo(res.data?.data)).catch(() => setUserInfo(null));
+      } else {
+        setUserInfo(null);
       }
     };
-    checkLogin();
-    window.addEventListener('storage', checkLogin);
-    return () => window.removeEventListener('storage', checkLogin);
+    fetchUser(); // 최초 1회만 호출
+    window.addEventListener('storage', fetchUser);
+    return () => {
+      window.removeEventListener('storage', fetchUser);
+    };
   }, []);
 
   useEffect(() => {
-    // 로그인 유저 정보 가져오기
+    if (!showChatRooms || !chatRooms.length || !userInfo) return;
+    if (userInfo.userRole === 'USER' || userInfo.userRole === 'PENDING_OWNER') {
+      const fetchNamesAndImages = async () => {
+        const names = {};
+        const images = {};
+        await Promise.all(chatRooms.map(async (room) => {
+          try {
+            const res = await api.get(`/gyms/${room.gymId}`);
+            const gym = res.data?.data || {};
+            names[room.chatRoomId] = gym.name || '체육관';
+            images[room.chatRoomId] = gym.profileImage || gym.avatar || gym.imageUrl || (Array.isArray(gym.images) ? gym.images[0] : null) || '';
+          } catch {
+            names[room.chatRoomId] = '체육관';
+            images[room.chatRoomId] = '';
+          }
+        }));
+        setChatRoomNames(names);
+        setChatRoomImages(images);
+      };
+      fetchNamesAndImages();
+    } else if (userInfo.userRole === 'OWNER') {
+      const fetchNamesAndImages = async () => {
+        const names = {};
+        const images = {};
+        await Promise.all(chatRooms.map(async (room) => {
+          try {
+            const res = await api.get(`/users/${room.userId}`);
+            const user = res.data?.data || {};
+            names[room.chatRoomId] = user.name || user.nickname || '유저';
+            images[room.chatRoomId] = user.userImage || user.profileImage || user.avatar || user.imageUrl || (Array.isArray(user.images) ? user.images[0] : null) || '';
+          } catch {
+            names[room.chatRoomId] = '유저';
+            images[room.chatRoomId] = '';
+          }
+        }));
+        setChatRoomNames(names);
+        setChatRoomImages(images);
+      };
+      fetchNamesAndImages();
+    }
+  }, [showChatRooms, chatRooms, userInfo]);
+
+  // userInfo가 바뀔 때마다 채팅방 목록 미리 불러오기
+  useEffect(() => {
+    if (!userInfo) return;
+    const fetchChatRooms = async () => {
+      if (userInfo.userRole === 'OWNER') {
+        const myGymsRes = await api.get('/users/me/gyms');
+        const myGyms = Array.isArray(myGymsRes.data?.data) ? myGymsRes.data.data : [];
+        let allRooms = [];
+        for (const gym of myGyms) {
+          const gymId = gym.id || gym.gymId || gym._id;
+          const res = await api.get(`/ws/chatRooms?userId=${gymId}&userType=OWNER`);
+          allRooms = allRooms.concat(res.data.data || []);
+        }
+        setChatRooms(allRooms);
+      } else {
+        let requestUserId = userInfo.userId ?? userInfo.id;
+        if (requestUserId) {
+          const res = await api.get(`/ws/chatRooms?userId=${requestUserId}&userType=${userInfo.userRole}`);
+          setChatRooms(res.data.data || []);
+        }
+      }
+    };
+    fetchChatRooms();
+    // 알림도 마찬가지로 미리 불러오려면 여기에 fetchNotifications() 추가
+
+    // 읽음 처리 후 채팅방 목록 새로고침 이벤트 리스너
+    const refresh = () => { fetchChatRooms(); };
+    window.addEventListener('refreshChatRooms', refresh);
+    return () => window.removeEventListener('refreshChatRooms', refresh);
+  }, [userInfo]);
+
+  const handleLogin = () => {
     const token = localStorage.getItem('token');
     if (token) {
       api.get('/users/me').then(res => setUserInfo(res.data?.data)).catch(() => setUserInfo(null));
-    } else {
-      setUserInfo(null);
     }
-  }, [isLoggedIn]);
-
-  // 채팅방 목록에서 상대방 이름/이미지 비동기 조회
-  useEffect(() => {
-    if (!showChatRooms || !chatRooms.length || !userInfo) return;
-    const fetchNamesAndImages = async () => {
-      const names = {};
-      const images = {};
-      await Promise.all(chatRooms.map(async (room) => {
-        try {
-          if (userInfo.userRole === 'USER') {
-            // 체육관 정보 조회
-            const res = await api.get(`/gyms/${room.gymId}`);
-            const gym = res.data?.data || {};
-            console.log('체육관 정보:', gym);
-            names[room.chatRoomId] = gym.name || '체육관';
-            images[room.chatRoomId] = gym.profileImage || gym.avatar || gym.imageUrl || (Array.isArray(gym.images) ? gym.images[0] : null) || '';
-          } else {
-            // 유저 정보 조회
-            const res = await api.get(`/users/${room.userId}`);
-            const user = res.data?.data || {};
-            console.log('유저 정보:', user);
-            names[room.chatRoomId] = user.name || user.nickname || '유저';
-            images[room.chatRoomId] = user.userImage || user.profileImage || user.avatar || user.imageUrl || (Array.isArray(user.images) ? user.images[0] : null) || '';
-          }
-        } catch {
-          names[room.chatRoomId] = userInfo.userRole === 'USER' ? '체육관' : '유저';
-          images[room.chatRoomId] = '';
-        }
-      }));
-      setChatRoomNames(names);
-      setChatRoomImages(images);
-    };
-    fetchNamesAndImages();
-  }, [showChatRooms, chatRooms, userInfo]);
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
-    setIsLoggedIn(false);
-    window.location.href = '/'; // 강제 새로고침으로 토큰 무효화
+    setUserInfo(null);
+    window.location.href = '/';
   };
 
   const handleChatClick = async () => {
-    if (!isLoggedIn) {
-      alert('로그인 후 이용 가능합니다.');
-      return;
-    }
+    console.log('userInfo:', userInfo);
+    console.log('userInfo.id:', userInfo && userInfo.id);
+    console.log('userInfo.userId:', userInfo && userInfo.userId);
     if (!userInfo) {
       alert('유저 정보를 불러오는 중입니다.');
       return;
     }
     try {
-      // 오너의 경우 체육관 ID를 사용해야 함
-      let requestUserId = userInfo.id;
       if (userInfo.userRole === 'OWNER') {
-        // 오너의 경우 체육관 ID를 사용 (myGyms에서 첫 번째 체육관의 ID 사용)
+        // 오너의 경우 모든 체육관 id로 각각 채팅방 목록을 조회해서 합침
         try {
-          const myGymsRes = await api.get('/gyms/my');
+          const myGymsRes = await api.get('/users/me/gyms');
           const myGyms = Array.isArray(myGymsRes.data?.data) ? myGymsRes.data.data : [];
           if (myGyms.length > 0) {
-            requestUserId = myGyms[0].id || myGyms[0].gymId || myGyms[0]._id;
-            console.log('오너 채팅방 조회 - 사용할 ID:', requestUserId);
+            let allRooms = [];
+            for (const gym of myGyms) {
+              const gymId = gym.id || gym.gymId || gym._id;
+              const res = await api.get(`/ws/chatRooms?userId=${gymId}&userType=OWNER`);
+              allRooms = allRooms.concat(res.data.data || []);
+            }
+            setChatRooms(allRooms);
+            setShowChatRooms(true);
+          } else {
+            alert('등록된 체육관이 없습니다.');
+            return;
           }
         } catch (error) {
-          console.error('내 체육관 정보 조회 실패:', error);
+          alert('내 체육관 정보를 불러오지 못했습니다.');
+          return;
         }
+      } else {
+        // 일반 유저/트레이너는 기존 방식대로
+        let requestUserId = userInfo.userId ?? userInfo.id;
+        if (!requestUserId) {
+          alert('채팅방을 조회할 수 없습니다. (유저 정보 없음)');
+          return;
+        }
+        console.log('채팅방 목록 조회 - userId:', requestUserId, 'userType:', userInfo.userRole);
+        const res = await api.get(`/ws/chatRooms?userId=${requestUserId}&userType=${userInfo.userRole}`);
+        setChatRooms(res.data.data || []);
+        setShowChatRooms(true);
       }
-      
-      console.log('채팅방 목록 조회 - userId:', requestUserId, 'userType:', userInfo.userRole);
-      const res = await api.get(`/ws/chatRooms?userId=${requestUserId}&userType=${userInfo.userRole}`);
-      setChatRooms(res.data.data || []);
-      setShowChatRooms(true);
     } catch (error) {
       console.error('채팅방 목록 조회 실패:', error);
       alert('채팅방 목록을 불러오지 못했습니다.');
@@ -140,28 +183,48 @@ export default function Header() {
     navigate(`/chat/${chatRoomId}`);
   };
 
-  const navItems = isLoggedIn
+  // userInfo만 있으면 로그인 상태로 간주
+  const isReallyLoggedIn = !!userInfo;
+
+  // 전체 안읽은 메시지 수 계산
+  const totalUnreadChats = chatRooms.reduce((sum, room) => sum + (room.unreadCount || 0), 0);
+
+  // navItems에서 채팅 아이콘에 뱃지 추가
+  const navItems = isReallyLoggedIn
     ? [
         { id: 'home', label: <span className="flex items-center gap-1 text-lg"><MdHome className="align-middle relative" style={{ top: '-2px', fontSize: '1.25em' }} />홈</span>, to: '/home' },
-        { id: 'chat', label: <span className="flex items-center gap-1 text-lg"><MdChat className="align-middle relative" style={{ top: '-2px', fontSize: '1.25em' }} />채팅</span>, to: '#', onClick: handleChatClick },
-        { id: 'notification', label: <span className="flex items-center gap-1 text-lg"><MdNotifications className="align-middle relative" style={{ top: '-2px', fontSize: '1.25em' }} />알림</span>, to: '#', onClick: () => {
-          if (!isLoggedIn) { alert('로그인한 유저만 이용 가능합니다.'); return; }
-          setShowNotification((v) => !v);
-        } },
-        { id: 'mypage', label: <span className="flex items-center gap-1 text-lg"><FaUserCircle className="align-middle relative" style={{ top: '-2px', fontSize: '1.25em' }} />마이페이지</span>, to: '/mypage', onClick: () => {
-          if (!isLoggedIn) { alert('로그인한 유저만 이용 가능합니다.'); return; }
-          navigate('/mypage');
-        } },
+        { id: 'chat', label: <span className="flex items-center gap-1 text-lg"><MdChat className="align-middle relative" style={{ top: '-2px', fontSize: '1.25em' }} />채팅{totalUnreadChats > 0 && <span className="ml-1 bg-pink-500 text-white text-xs rounded-full px-1.5 py-0.5 font-bold shadow">{totalUnreadChats}</span>}</span>, to: '#', onClick: handleChatClick },
+        { id: 'notification', label: <span className="flex items-center gap-1 text-lg"><MdNotifications className="align-middle relative" style={{ top: '-2px', fontSize: '1.25em' }} />알림</span>, to: '#', onClick: () => { setShowNotification((v) => !v); } },
+        { id: 'mypage', label: <span className="flex items-center gap-1 text-lg"><FaUserCircle className="align-middle relative" style={{ top: '-2px', fontSize: '1.25em' }} />마이페이지</span>, to: '/mypage', onClick: () => { navigate('/mypage'); } },
       ]
     : [
         { id: 'home', label: <span className="flex items-center gap-1 text-lg"><MdHome className="align-middle relative" style={{ top: '-2px', fontSize: '1.25em' }} />홈</span>, to: '/home' },
-        { id: 'login', label: '로그인', to: '/login' },
+        { id: 'login', label: '로그인', to: '/login', onClick: handleLogin },
         { id: 'signup', label: '회원가입', to: '/signup' },
       ];
 
-  const actionButton = isLoggedIn
+  const actionButton = isReallyLoggedIn
     ? { label: '로그아웃', onClick: handleLogout }
-    : { label: '회원가입', to: '/signup' };
+    : { label: '회원가입', to: '/signup', onClick: handleLogin };
+
+  // 채팅방 목록 정렬 (최신 메시지 순)
+  const sortedChatRooms = [...chatRooms].sort((a, b) => {
+    const aTime = new Date(a.updatedAt || a.lastMessageTime || a.createdAt || 0).getTime();
+    const bTime = new Date(b.updatedAt || b.lastMessageTime || b.createdAt || 0).getTime();
+    return bTime - aTime;
+  });
+
+  // 마지막 메시지 시간 '몇분 전' 등으로 표시하는 함수
+  function formatTimeAgo(dateString) {
+    if (!dateString) return '';
+    const now = new Date();
+    const date = new Date(dateString);
+    const diff = Math.floor((now - date) / 60000); // 분 단위
+    if (diff < 1) return '방금 전';
+    if (diff < 60) return `${diff}분 전`;
+    if (diff < 1440) return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleDateString('ko-KR');
+  }
 
   return (
     <header className="sticky top-0 bg-white px-6 py-3 z-30 shadow-md font-pretendard" style={{ fontFamily: 'Pretendard, Montserrat, Noto Sans KR, sans-serif' }}>
@@ -224,13 +287,13 @@ export default function Header() {
               )
             ))}
           </nav>
-          {isLoggedIn ? (
+          {isReallyLoggedIn ? (
             <Button onClick={handleLogout} className="ml-2 bg-gray-200 text-black font-semibold px-4 py-2 rounded-lg shadow hover:bg-gray-300 transition">
               로그아웃
             </Button>
           ) : (
             <Button
-              onClick={() => navigate(actionButton.to)}
+              onClick={() => { handleLogin(); navigate(actionButton.to); }}
               className="ml-2 bg-blue-500 text-white font-semibold px-4 py-2 rounded-lg shadow hover:bg-pink-500 transition"
             >
               {actionButton.label}
@@ -322,13 +385,13 @@ export default function Header() {
               )
             ))}
           </nav>
-          {isLoggedIn ? (
+          {isReallyLoggedIn ? (
             <Button onClick={() => { setMenuOpen(false); handleLogout(); }} className="w-11/12 mt-2 bg-gray-200 text-black font-semibold px-4 py-3 rounded-lg shadow hover:bg-gray-300 transition">
               로그아웃
             </Button>
           ) : (
             <Button
-              onClick={() => { setMenuOpen(false); navigate(actionButton.to); }}
+              onClick={() => { setMenuOpen(false); handleLogin(); navigate(actionButton.to); }}
               className="w-11/12 mt-2 bg-blue-500 text-white font-semibold px-4 py-3 rounded-lg shadow hover:bg-pink-500 transition"
             >
               {actionButton.label}
@@ -355,12 +418,23 @@ export default function Header() {
               <div className="text-gray-400 text-center py-8">채팅방이 없습니다.</div>
             ) : (
               <ul className="flex flex-col gap-3">
-                {chatRooms.map(room => {
-                  const opponentName = chatRoomNames[room.chatRoomId] || (userInfo?.userRole === 'USER' ? '체육관' : '유저');
-                  const opponentImg = chatRoomImages[room.chatRoomId] || '';
+                {sortedChatRooms.map(room => {
+                  let opponentName = '';
+                  let opponentImg = '';
+                  if (userInfo?.userRole === 'USER' || userInfo?.userRole === 'PENDING_OWNER') {
+                    opponentName = chatRoomNames[room.chatRoomId] || '체육관';
+                    opponentImg = chatRoomImages[room.chatRoomId] || '';
+                  } else if (userInfo?.userRole === 'OWNER') {
+                    opponentName = chatRoomNames[room.chatRoomId] || '유저';
+                    opponentImg = chatRoomImages[room.chatRoomId] || '';
+                  } else {
+                    opponentName = room.userName || '유저';
+                    opponentImg = room.userImage || '';
+                  }
                   const lastMsg = room.content || '';
                   const lastSender = room.senderType === (userInfo?.userRole === 'USER' ? 'USER' : 'GYM') ? '나' : opponentName;
                   const unread = room.unreadCount || 0;
+                  const lastTime = room.updatedAt || room.lastMessageTime || room.createdAt;
                   return (
                     <li key={room.chatRoomId} className="rounded-xl bg-gradient-to-br from-blue-50 to-purple-50 shadow border border-gray-100 px-4 py-3 flex items-center gap-4 cursor-pointer hover:bg-blue-100 transition" onClick={() => { setShowChatRooms(false); handleChatRoomClick(room.chatRoomId); }}>
                       {opponentImg ? (
@@ -377,7 +451,7 @@ export default function Header() {
                         </div>
                         <div className="text-xs text-gray-500 truncate max-w-[180px] mt-0.5">{lastSender} : {lastMsg}</div>
                       </div>
-                      <div className="text-xs text-gray-400 ml-2 whitespace-nowrap">{room.updatedAt ? new Date(room.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</div>
+                      <div className="text-xs text-gray-400 ml-2 whitespace-nowrap">{formatTimeAgo(lastTime)}</div>
                     </li>
                   );
                 })}

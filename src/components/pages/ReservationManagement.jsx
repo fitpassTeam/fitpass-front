@@ -9,6 +9,7 @@ function ReservationManagement() {
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [mode, setMode] = useState('register');
 
   // 내 체육관 목록 불러오기
   useEffect(() => {
@@ -71,50 +72,70 @@ function ReservationManagement() {
   };
 
   return (
-    <div className="max-w-xl mx-auto bg-white/90 p-10 rounded-2xl shadow-2xl mt-12 flex flex-col items-center">
-      <h1 className="text-3xl font-extrabold mb-6 text-center bg-gradient-to-r from-blue-500 to-purple-500 text-transparent bg-clip-text drop-shadow">
-        예약 관리
-      </h1>
-      <div className="mb-4 w-full">
-        <label htmlFor="gym-select" className="block font-semibold mb-1">내 체육관 선택</label>
-        <Select
-          inputId="gym-select"
-          options={gymOptions}
-          value={gymOptions.find(opt => opt.value === selectedGym?.value) || null}
-          onChange={option => setSelectedGym(option)}
-          placeholder="내 체육관 선택"
-          isClearable
-          menuPlacement="auto"
-        />
+    <div className="max-w-3xl mx-auto mt-10 p-6 bg-white rounded-2xl shadow-xl">
+      <h1 className="text-2xl font-bold mb-6 text-center">예약 관리</h1>
+      <div className="flex gap-4 justify-center mb-8">
+        <button
+          className={`px-6 py-2 rounded-full font-bold text-lg shadow transition border-2 ${mode === 'register' ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-blue-500 border-blue-200 hover:bg-blue-50'}`}
+          onClick={() => setMode('register')}
+        >
+          예약 등록
+        </button>
+        <button
+          className={`px-6 py-2 rounded-full font-bold text-lg shadow transition border-2 ${mode === 'edit' ? 'bg-purple-500 text-white border-purple-500' : 'bg-white text-purple-500 border-purple-200 hover:bg-purple-50'}`}
+          onClick={() => setMode('edit')}
+        >
+          예약 수정
+        </button>
+        <button
+          className={`px-6 py-2 rounded-full font-bold text-lg shadow transition border-2 ${mode === 'delete' ? 'bg-red-500 text-white border-red-500' : 'bg-white text-red-500 border-red-200 hover:bg-red-50'}`}
+          onClick={() => setMode('delete')}
+        >
+          예약 삭제
+        </button>
       </div>
-      {loading ? (
-        <div className="text-blue-400 animate-pulse mt-4">예약 목록 불러오는 중...</div>
-      ) : error ? (
-        <div className="text-red-500 mt-4">{error}</div>
-      ) : (
-        <div className="mt-4 space-y-4 w-full">
-          {reservations.length === 0 ? (
-            <div className="text-gray-400">예약 내역이 없습니다.</div>
-          ) : (
-            reservations.map((r, idx) => (
-              <div key={r.id || r.reservationId || idx} className="bg-white rounded-xl shadow p-4 flex flex-row justify-between items-center gap-4 border border-gray-100">
-                <div className="flex-1 min-w-0">
-                  <div className="font-bold text-lg">트레이너: {r.trainerName || r.trainer?.name || '-'}</div>
-                  <div className="text-gray-600">예약자: {r.userName || r.user?.name || '-'}</div>
-                  <div className="text-gray-600">날짜: {r.reservationDate} / 시간: {r.reservationTime}</div>
-                  <div className="text-gray-600">상태: <span className="font-bold">{r.status}</span></div>
-                </div>
-                {r.status === 'PENDING' && (
-                  <div className="flex flex-col gap-2 min-w-[90px] items-end">
-                    <button className="px-5 py-2 rounded-lg font-bold shadow bg-gradient-to-r from-green-400 to-green-600 text-white hover:from-green-500 hover:to-green-700 transition-all" onClick={() => handleReservationAction(r, 'confirm')}>승인</button>
-                    <button className="px-5 py-2 rounded-lg font-bold shadow bg-gradient-to-r from-red-400 to-red-600 text-white hover:from-red-500 hover:to-red-700 transition-all" onClick={() => handleReservationAction(r, 'reject')}>거절</button>
-                  </div>
-                )}
-              </div>
-            ))
-          )}
+      <div className="max-w-xl mx-auto bg-white/90 p-10 rounded-2xl shadow-2xl mt-12 flex flex-col items-center">
+        <div className="mb-4 w-full">
+          <label htmlFor="gym-select" className="block font-semibold mb-1">내 체육관 선택</label>
+          <Select
+            inputId="gym-select"
+            options={gymOptions}
+            value={gymOptions.find(opt => opt.value === selectedGym?.value) || null}
+            onChange={option => setSelectedGym(option)}
+            placeholder="내 체육관 선택"
+            isClearable
+            menuPlacement="auto"
+          />
         </div>
-      )}
+        {loading ? (
+          <div className="text-blue-400 animate-pulse mt-4">예약 목록 불러오는 중...</div>
+        ) : error ? (
+          <div className="text-red-500 mt-4">{error}</div>
+        ) : (
+          <div className="mt-4 space-y-4 w-full">
+            {reservations.length === 0 ? (
+              <div className="text-gray-400">예약 내역이 없습니다.</div>
+            ) : (
+              reservations.map((r, idx) => (
+                <div key={r.id || r.reservationId || idx} className="bg-white rounded-xl shadow p-4 flex flex-row justify-between items-center gap-4 border border-gray-100">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-lg">트레이너: {r.trainerName || r.trainer?.name || '-'}</div>
+                    <div className="text-gray-600">예약자: {r.userName || r.user?.name || '-'}</div>
+                    <div className="text-gray-600">날짜: {r.reservationDate} / 시간: {r.reservationTime}</div>
+                    <div className="text-gray-600">상태: <span className="font-bold">{r.status}</span></div>
+                  </div>
+                  {r.status === 'PENDING' && (
+                    <div className="flex flex-col gap-2 min-w-[90px] items-end">
+                      <button className="px-5 py-2 rounded-lg font-bold shadow bg-gradient-to-r from-green-400 to-green-600 text-white hover:from-green-500 hover:to-green-700 transition-all" onClick={() => handleReservationAction(r, 'confirm')}>승인</button>
+                      <button className="px-5 py-2 rounded-lg font-bold shadow bg-gradient-to-r from-red-400 to-red-600 text-white hover:from-red-500 hover:to-red-700 transition-all" onClick={() => handleReservationAction(r, 'reject')}>거절</button>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -18,18 +18,19 @@ function EditProfilePage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // 내 정보 불러오기
+    // 최초 마운트에만 내 정보 조회
     api.get('/users/me')
       .then(res => {
         const user = res.data?.data;
-        setForm({
+        setForm(prev => ({
+          ...prev,
           name: user?.name || '',
           phone: user?.phone || '',
           age: user?.age || '',
           address: user?.address || '',
           password: '',
-          imageUrl: user?.imageUrl || '',
-        });
+          imageUrl: prev.imageUrl || user?.userImage || '',
+        }));
       })
       .catch(() => setError('내 정보를 불러오지 못했습니다.'))
       .finally(() => setLoading(false));
@@ -40,18 +41,28 @@ function EditProfilePage() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // S3 이미지 업로드
+  // S3 presigned url 방식 이미지 업로드 (상태값만 갱신, 서버에 PATCH 안 보냄)
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setImgUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('profileImage', file);
-      const res = await api.patch('/users/me/profile-image', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      const res = await api.get('/images/presigned-url', {
+        params: { filename: file.name, contentType: file.type }
       });
-      setForm(prev => ({ ...prev, imageUrl: res.data?.data }));
+      const { presignedUrl, fileName } = res.data.data;
+      await fetch(presignedUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      });
+      // S3에 저장된 실제 이미지 URL 조합
+      const s3Url = `https://fit-pass-1.s3.ap-northeast-2.amazonaws.com/${fileName}`;
+      setForm(prev => {
+        const next = { ...prev, imageUrl: s3Url };
+        console.log('이미지 업로드 후 form 상태:', next);
+        return next;
+      });
     } catch (err) {
       setError('이미지 업로드에 실패했습니다.');
     } finally {
@@ -75,17 +86,19 @@ function EditProfilePage() {
     }
   };
 
+  // 저장 버튼 (유저 정보 수정)
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     const patchData = {
       name: form.name,
-      phone: form.phone,
       age: form.age,
       address: form.address,
+      phone: form.phone,
+      userImage: form.imageUrl ?? '',
     };
     if (form.password) patchData.password = form.password;
-    if (form.imageUrl) patchData.userImage = form.imageUrl;
+    console.log('PATCH 요청 직전 patchData:', patchData);
     try {
       await api.patch('/users/me', patchData);
       alert('내 정보가 수정되었습니다!');

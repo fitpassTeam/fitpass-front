@@ -8,6 +8,7 @@ import addressData from '../../assets/addressData';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery as useQueryPopular } from '@tanstack/react-query';
 import logo from '../../assets/logo.jpg';
+import atemBanner from '../../assets/atem-banner.png';
 
 function formatTime(timeStr) {
     // '06:00:00' -> '06:00'
@@ -249,10 +250,10 @@ function Home() {
                                 </div>
                                 <div className="flex-1 min-w-0 flex flex-col gap-1">
                                     <div className="text-lg font-medium text-gray-900 leading-tight mb-0.5">{gym.name}</div>
-                                    <div className="text-sm text-gray-500 font-normal mb-0.5">{gym.address}</div>
-                                    <div className="text-xs text-gray-400 font-light mb-0.5">운영시간: {formatTime(gym.openTime)} ~ {formatTime(gym.closeTime)}</div>
+                                    <div className="text-sm text-gray-700 font-normal mb-1">{gym.address}</div>
+                                    <div className="text-base font-semibold text-gray-900 mb-1">운영시간: {formatTime(gym.openTime)} ~ {formatTime(gym.closeTime)}</div>
                                     {gym.summary && (
-                                      <div className="text-xs text-blue-500 font-medium mt-1">{gym.summary}</div>
+                                        <div className="whitespace-pre-line font-bold text-base text-indigo-800 mb-1">{gym.summary}</div>
                                     )}
                                 </div>
                                 <button
@@ -294,26 +295,26 @@ function Home() {
                   {/* 헬스용품 추천 광고 (흰색 배경) */}
                   <div className="bg-white rounded-2xl shadow-md flex flex-col items-center justify-center min-h-[200px] p-6">
                     <a
-                      href="https://atemshop.com/product/list.html?cate_no=446&cafe_mkt=google_aw&utm_source=google&utm_medium=cpc&utm_campaign=h_conversions-brand&utm_term=&utm_content=250604_HEVENT_G_event_all_brand_home_egc&gad_source=1"
+                      href="https://www.atemshop.co.kr/"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="block w-full max-w-xs"
                     >
                       <img
-                        src="https://images.pexels.com/photos/5938366/pexels-photo-5938366.jpeg?auto=compress&w=400"
-                        alt="헬스용품 추천"
+                        src={atemBanner}
+                        alt="에잇템 베스트 셀러 광고"
                         className="w-full rounded-xl shadow-lg mb-3 border-2 border-blue-200"
                       />
                     </a>
-                    <div className="text-lg font-bold text-blue-600 mb-1">헬스식품/닭가슴살 추천</div>
-                    <div className="text-gray-600 text-sm mb-3">단백질 간편식, 닭가슴살, 건강식품을 한눈에!</div>
+                    <div className="text-lg font-bold text-blue-600 mb-1">에잇템 베스트 셀러</div>
+                    <div className="text-gray-600 text-sm mb-3">지금 가장 잘나가는 단백질 간편식, 닭가슴살, 건강식품!</div>
                     <a
-                      href="https://atemshop.com/product/list.html?cate_no=446&cafe_mkt=google_aw&utm_source=google&utm_medium=cpc&utm_campaign=h_conversions-brand&utm_term=&utm_content=250604_HEVENT_G_event_all_brand_home_egc&gad_source=1"
+                      href="https://www.atemshop.co.kr/"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold rounded-full shadow hover:scale-105 transition text-center"
                     >
-                      에잇템 헬스식품 바로가기
+                      에잇템 바로가기
                     </a>
                   </div>
                 </div>

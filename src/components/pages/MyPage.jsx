@@ -269,7 +269,7 @@ function MyPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-2 sm:px-4 py-6">
+    <div className="max-w-6xl mx-auto px-2 sm:px-4 py-6">
       <div className="bg-white rounded-2xl shadow-2xl w-full p-4 sm:p-8 flex flex-col gap-6">
         {/* 상단 프로필 카드 */}
         <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -360,25 +360,29 @@ function MyPage() {
               </button>
             </div>
             {/* PC: 기존 메뉴 */}
-            <div className="hidden sm:flex bg-gradient-to-r from-green-200 via-blue-100 to-purple-100 rounded-2xl shadow-lg flex-row items-center gap-6 p-8 mt-2">
-              <div className="flex-1 flex flex-col items-center sm:items-start">
-                <div className="text-xl font-bold text-gray-800 mb-2">사업자 전용 메뉴</div>
-                <div className="flex gap-4">
-                  <button className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-full font-bold shadow transition-all" onClick={() => navigate('/gym-management')}>체육관 관리</button>
-                  <button className="px-6 py-3 bg-pink-500 hover:bg-pink-600 text-white rounded-full font-bold shadow transition-all" onClick={() => navigate('/trainer-management')}>트레이너 관리</button>
-                  <button className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-full font-bold shadow transition-all" onClick={() => navigate('/membership-management')}>이용권 관리</button>
-                  <button className="px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-full font-bold shadow transition-all" onClick={() => navigate('/reservation-management')}>예약 관리</button>
+            <div className="flex justify-center mt-8">
+              <div className="inline-flex bg-gradient-to-r from-green-200 via-blue-100 to-purple-100 rounded-2xl shadow-lg items-center gap-2 p-8 w-auto mx-auto">
+                <div className="text-xl font-bold text-gray-800 mr-6">사업자 전용 메뉴</div>
+                <div className="flex flex-wrap gap-2 justify-center min-w-0 overflow-x-auto">
+                  <button className="min-w-[120px] px-8 py-3 whitespace-nowrap bg-green-500 hover:bg-green-600 text-white rounded-full font-bold shadow transition-all" onClick={() => navigate('/gym-management')}>체육관 관리</button>
+                  <button className="min-w-[120px] px-8 py-3 whitespace-nowrap bg-pink-500 hover:bg-pink-600 text-white rounded-full font-bold shadow transition-all" onClick={() => navigate('/trainer-management')}>트레이너 관리</button>
+                  <button className="min-w-[120px] px-8 py-3 whitespace-nowrap bg-blue-500 hover:bg-blue-600 text-white rounded-full font-bold shadow transition-all" onClick={() => navigate('/membership-management')}>이용권 관리</button>
+                  <button className="min-w-[120px] px-8 py-3 whitespace-nowrap bg-purple-500 hover:bg-purple-600 text-white rounded-full font-bold shadow transition-all" onClick={() => navigate('/reservation-management')}>예약 관리</button>
+                  <button className="min-w-[120px] px-8 py-3 whitespace-nowrap bg-yellow-500 hover:bg-yellow-600 text-white rounded-full font-bold shadow transition-all" onClick={() => navigate('/post-management')}>게시글 관리</button>
                 </div>
               </div>
             </div>
             {/* 모바일: 드롭다운 메뉴 */}
             {menuOpen && (
-              <div className="flex flex-col gap-2 mt-2 sm:hidden bg-gradient-to-r from-green-200 via-blue-100 to-purple-100 rounded-2xl shadow-lg p-4 animate-fadeIn">
+              <div className="flex flex-col gap-2 mt-2 sm:hidden bg-gradient-to-r from-green-200 via-blue-100 to-purple-100 rounded-2xl shadow-lg p-4 animate-fadeIn max-w-5xl mx-auto">
                 <div className="text-xl font-bold text-gray-800 mb-2">사업자 전용 메뉴</div>
-                <button className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-full font-bold shadow transition-all" onClick={() => { setMenuOpen(false); navigate('/gym-management'); }}>체육관 관리</button>
-                <button className="px-6 py-3 bg-pink-500 hover:bg-pink-600 text-white rounded-full font-bold shadow transition-all" onClick={() => { setMenuOpen(false); navigate('/trainer-management'); }}>트레이너 관리</button>
-                <button className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-full font-bold shadow transition-all" onClick={() => { setMenuOpen(false); navigate('/membership-management'); }}>이용권 관리</button>
-                <button className="px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-full font-bold shadow transition-all" onClick={() => { setMenuOpen(false); navigate('/reservation-management'); }}>예약 관리</button>
+                <div className="flex flex-wrap gap-2 justify-center min-w-0 overflow-x-auto">
+                  <button className="min-w-[120px] px-8 py-3 whitespace-nowrap bg-green-500 hover:bg-green-600 text-white rounded-full font-bold shadow transition-all" onClick={() => { setMenuOpen(false); navigate('/gym-management'); }}>체육관 관리</button>
+                  <button className="min-w-[120px] px-8 py-3 whitespace-nowrap bg-pink-500 hover:bg-pink-600 text-white rounded-full font-bold shadow transition-all" onClick={() => { setMenuOpen(false); navigate('/trainer-management'); }}>트레이너 관리</button>
+                  <button className="min-w-[120px] px-8 py-3 whitespace-nowrap bg-blue-500 hover:bg-blue-600 text-white rounded-full font-bold shadow transition-all" onClick={() => { setMenuOpen(false); navigate('/membership-management'); }}>이용권 관리</button>
+                  <button className="min-w-[120px] px-8 py-3 whitespace-nowrap bg-purple-500 hover:bg-purple-600 text-white rounded-full font-bold shadow transition-all" onClick={() => { setMenuOpen(false); navigate('/reservation-management'); }}>예약 관리</button>
+                  <button className="min-w-[120px] px-8 py-3 whitespace-nowrap bg-yellow-500 hover:bg-yellow-600 text-white rounded-full font-bold shadow transition-all" onClick={() => { setMenuOpen(false); navigate('/post-management'); }}>게시글 관리</button>
+                </div>
               </div>
             )}
           </div>
@@ -488,12 +492,12 @@ function MyPage() {
         )}
         {/* 에러 모달 */}
         {errorMsg && (
-          <div className="fixed inset-0 flex items-center justify-center p-2">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-xs sm:max-w-md md:max-w-2xl p-4">
-              <div className="text-lg font-bold text-red-500 mb-4">알림</div>
+          <div className="fixed inset-0 flex items-center justify-center min-h-screen bg-black/10 z-50">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+              <div className="text-lg font-bold text-blue-500 mb-4 text-center">알림</div>
               <div className="text-gray-700 text-center mb-6 whitespace-pre-line">{errorMsg}</div>
               <button
-                className="px-6 py-2 bg-blue-500 text-white rounded-full font-bold shadow hover:bg-blue-600 transition"
+                className="px-6 py-2 bg-blue-500 text-white rounded-full font-bold shadow hover:bg-blue-600 transition block mx-auto"
                 onClick={() => setErrorMsg('')}
               >
                 확인
@@ -503,12 +507,12 @@ function MyPage() {
         )}
         {/* 성공 모달 */}
         {successMsg && (
-          <div className="fixed inset-0 flex items-center justify-center p-2">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-xs sm:max-w-md md:max-w-2xl p-4">
-              <div className="text-lg font-bold text-blue-500 mb-4">알림</div>
+          <div className="fixed inset-0 flex items-center justify-center min-h-screen bg-black/10 z-50">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+              <div className="text-lg font-bold text-blue-500 mb-4 text-center">알림</div>
               <div className="text-gray-700 text-center mb-6 whitespace-pre-line">{successMsg}</div>
               <button
-                className="px-6 py-2 bg-blue-500 text-white rounded-full font-bold shadow hover:bg-blue-600 transition"
+                className="px-6 py-2 bg-blue-500 text-white rounded-full font-bold shadow hover:bg-blue-600 transition block mx-auto"
                 onClick={() => window.location.reload()}
               >
                 확인

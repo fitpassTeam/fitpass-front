@@ -21,7 +21,6 @@ export default function useSseSubscribe(onMessage) {
     eventSource.addEventListener('sse', (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log('SSE 알림 도착:', data);
         if (onMessage) onMessage({ ...data, read: false });
       } catch (e) {
         // JSON이 아닐 경우(예: "Event Stream Established.") 무시

@@ -69,6 +69,16 @@ function create(baseURL = API_BASE_URL, options) {
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
       }
+      if (status === 401) {
+        // 인증 만료: 토큰 삭제 + 로그인 페이지 이동
+        localStorage.removeItem('token');
+        // localStorage.removeItem('refreshToken'); // 필요시
+        alert('인증이 만료되었습니다. 다시 로그인 해주세요.');
+        window.location.href = '/login';
+      } else if (status === 403) {
+        // 권한 없음: 안내만, 로그아웃/이동 없음
+        alert('이 기능을 사용할 권한이 없습니다.');
+      }
       return Promise.reject(error);
     }
   );

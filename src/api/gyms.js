@@ -17,7 +17,7 @@ export function getSearchGyms({ page = 0, size = 10, keyword, city, district } =
   if (keyword && keyword !== 'null' && keyword !== '') params.keyword = keyword;
   if (city && city !== 'null' && city !== '') params.city = city;
   if (district && district !== 'null' && district !== '') params.district = district;
-  return api.get('/search/gyms/v1', {
+  return api.get('/search/gyms', {
     params,
   });
 }
