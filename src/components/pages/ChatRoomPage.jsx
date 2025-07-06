@@ -288,7 +288,7 @@ export default function ChatRoomPage() {
   return isLoading ? (
     <div>로딩 중...</div>
   ) : (
-    <div className="h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="h-screen flex flex-col bg-white max-w-xl mx-auto shadow-lg rounded-2xl">
       {/* 헤더 */}
       <motion.div 
         initial={{ y: -20, opacity: 0 }}

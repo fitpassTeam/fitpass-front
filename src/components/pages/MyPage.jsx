@@ -306,7 +306,7 @@ function MyPage() {
             </div>
             <div className="flex gap-2 mt-4">
               <button
-                className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full font-bold shadow hover:from-pink-500 hover:to-blue-500 transition-all"
+                className="px-6 py-2 bg-white border-2 border-blue-400 text-blue-500 rounded-full font-bold shadow hover:bg-blue-50 transition-all"
                 onClick={() => navigate('/check-password')}
               >
                 내 정보 수정
@@ -361,7 +361,7 @@ function MyPage() {
             </div>
             {/* PC: 기존 메뉴 */}
             <div className="flex justify-center mt-8">
-              <div className="inline-flex bg-gradient-to-r from-green-200 via-blue-100 to-purple-100 rounded-2xl shadow-lg items-center gap-2 p-8 w-auto mx-auto">
+              <div className="inline-flex bg-white border border-gray-200 rounded-2xl shadow-lg items-center gap-2 p-8 w-auto mx-auto">
                 <div className="text-xl font-bold text-gray-800 mr-6">사업자 전용 메뉴</div>
                 <div className="flex flex-wrap gap-2 justify-center min-w-0 overflow-x-auto">
                   <button className="min-w-[120px] px-8 py-3 whitespace-nowrap bg-green-500 hover:bg-green-600 text-white rounded-full font-bold shadow transition-all" onClick={() => navigate('/gym-management')}>체육관 관리</button>
@@ -374,7 +374,7 @@ function MyPage() {
             </div>
             {/* 모바일: 드롭다운 메뉴 */}
             {menuOpen && (
-              <div className="flex flex-col gap-2 mt-2 sm:hidden bg-gradient-to-r from-green-200 via-blue-100 to-purple-100 rounded-2xl shadow-lg p-4 animate-fadeIn max-w-5xl mx-auto">
+              <div className="flex flex-col gap-2 mt-2 sm:hidden bg-white border border-gray-200 rounded-2xl shadow-lg p-4 animate-fadeIn max-w-5xl mx-auto">
                 <div className="text-xl font-bold text-gray-800 mb-2">사업자 전용 메뉴</div>
                 <div className="flex flex-wrap gap-2 justify-center min-w-0 overflow-x-auto">
                   <button className="min-w-[120px] px-8 py-3 whitespace-nowrap bg-green-500 hover:bg-green-600 text-white rounded-full font-bold shadow transition-all" onClick={() => { setMenuOpen(false); navigate('/gym-management'); }}>체육관 관리</button>
@@ -389,7 +389,7 @@ function MyPage() {
         )}
         {/* USER, PENDING_OWNER 권한: 나의 예약현황 */}
         {(user.userRole === 'USER' || user.userRole === 'PENDING_OWNER') && (
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl shadow-lg p-8 mt-4">
+          <div className="bg-white border border-gray-200 rounded-2xl shadow-lg p-8 mt-4">
             <div className="text-xl font-bold text-gray-800 mb-4">나의 예약 현황</div>
             {reservationsLoading ? (
               <div className="text-blue-400 animate-pulse">예약 목록 불러오는 중...</div>

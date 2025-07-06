@@ -180,40 +180,40 @@ function Home() {
     return (
         <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
             {/* 상단: 검색바 */}
-            <div className="flex flex-col sm:flex-row justify-center mb-8 w-full gap-2 sm:gap-4">
-                <div className="w-full flex flex-col sm:flex-row gap-2 sm:gap-3 items-center justify-center">
-                    <div className="w-full sm:flex-1">
-                        <SearchBar
-                            searchText={searchText}
-                            onSearch={val => handleSearch(val, draftCity, draftDistrict)}
-                            logo={logo}
-                        />
-                    </div>
-                    <div className="w-full sm:w-auto flex gap-2 sm:gap-3">
-                        <select
-                            name="city"
-                            value={draftCity}
-                            onChange={handleCityChange}
-                            className="flex-1 sm:flex-none border-2 border-blue-400 focus:border-blue-500 bg-white rounded-full px-3 py-2 sm:py-3 outline-none min-w-[120px] w-auto h-10 sm:h-12 text-sm sm:text-base font-semibold max-w-xs"
-                        >
-                            <option value="">시/도</option>
-                            {cities.map(city => (
-                                <option key={city} value={city}>{city}</option>
-                            ))}
-                        </select>
-                        <select
-                            name="district"
-                            value={draftDistrict}
-                            onChange={handleDistrictChange}
-                            className="flex-1 sm:flex-none border-2 border-blue-400 focus:border-blue-500 bg-white rounded-full px-3 py-2 sm:py-3 outline-none min-w-[120px] w-auto h-10 sm:h-12 text-sm sm:text-base font-semibold max-w-xs"
-                            disabled={!draftCity}
-                        >
-                            <option value="">시/군/구</option>
-                            {districts.map(district => (
-                                <option key={district} value={district}>{district}</option>
-                            ))}
-                        </select>
-                    </div>
+            <div className="mb-8 w-full grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-4 items-center">
+                {/* 검색바: 왼쪽 2/3 */}
+                <div className="md:col-span-2 col-span-1 w-full">
+                    <SearchBar
+                        searchText={searchText}
+                        onSearch={val => handleSearch(val, draftCity, draftDistrict)}
+                        logo={logo}
+                    />
+                </div>
+                {/* 시/도 + 시/군/구: 오른쪽 1/3, 인기 체육관 카드와 가로 길이 맞춤 */}
+                <div className="col-span-1 w-full max-w-md mx-auto flex gap-2 sm:gap-3">
+                    <select
+                        name="city"
+                        value={draftCity}
+                        onChange={handleCityChange}
+                        className="flex-1 border-2 border-blue-400 focus:border-blue-500 bg-white rounded-full px-3 py-2 sm:py-3 outline-none min-w-[100px] w-auto h-10 sm:h-12 text-sm sm:text-base font-semibold"
+                    >
+                        <option value="">시/도</option>
+                        {cities.map(city => (
+                            <option key={city} value={city}>{city}</option>
+                        ))}
+                    </select>
+                    <select
+                        name="district"
+                        value={draftDistrict}
+                        onChange={handleDistrictChange}
+                        className="flex-1 border-2 border-blue-400 focus:border-blue-500 bg-white rounded-full px-3 py-2 sm:py-3 outline-none min-w-[100px] w-auto h-10 sm:h-12 text-sm sm:text-base font-semibold"
+                        disabled={!draftCity}
+                    >
+                        <option value="">시/군/구</option>
+                        {districts.map(district => (
+                            <option key={district} value={district}>{district}</option>
+                        ))}
+                    </select>
                 </div>
             </div>
             {/* 중단: 본문 그리드 (반응형) */}
@@ -232,7 +232,7 @@ function Home() {
                             </div>
                         ) : gyms.length === 0 && !isLoading ? (
                             <div className="col-span-1 flex flex-col items-center py-16 text-gray-400">
-                                <span className="text-2xl font-bold">체육관이 없습니다.</span>
+                                <span className="text-2xl font-bold">등록된 체육관이 없습니다.</span>
                             </div>
                         ) : null}
                         {gyms.map(gym => (
@@ -277,7 +277,7 @@ function Home() {
                     ) : isPopularError ? (
                       <div className="text-red-400">에러가 발생했습니다.</div>
                     ) : popularGyms.length === 0 ? (
-                      <div className="text-gray-400">인기 체육관 데이터가 없습니다.</div>
+                      <div className="text-gray-400">검색된 체육관이 없습니다.</div>
                     ) : (
                       <ul className="w-full space-y-2">
                         {popularGyms.map((gym, idx) => (
