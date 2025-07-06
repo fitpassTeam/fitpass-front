@@ -53,7 +53,7 @@ function SearchBar({ searchText = '', onSearch, logo }) {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       try {
-        const res = await api.get(`/search/gyms/v1?keyword=${encodeURIComponent(localSearchText)}&size=10`);
+        const res = await api.get(`/search/gyms?keyword=${encodeURIComponent(localSearchText)}&size=10`);
         const list = Array.isArray(res.data?.data?.content) ? res.data.data.content : [];
         setSuggestions(list);
         setShowDropdown(true);

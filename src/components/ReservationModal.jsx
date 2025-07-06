@@ -4,6 +4,7 @@ import { getMyPoint } from '../api/user';
 import { api } from '../api/http';
 import { useQuery as useUserQuery } from '@tanstack/react-query';
 import PropTypes from 'prop-types';
+import { useNavigate } from 'react-router-dom';
 
 export default function ReservationModal({ open, onClose, type, gymId, membershipId, trainerId }) {
   const [date, setDate] = useState('');
@@ -16,6 +17,7 @@ export default function ReservationModal({ open, onClose, type, gymId, membershi
   const [membershipPrice, setMembershipPrice] = useState(null);
   const [membershipInfo, setMembershipInfo] = useState(null);
   const [selectedTrainer, setSelectedTrainer] = useState(null);
+  const navigate = useNavigate();
 
   // 유저 정보 가져오기
   const { data: userInfo } = useUserQuery({
@@ -115,7 +117,27 @@ export default function ReservationModal({ open, onClose, type, gymId, membershi
       setPoint(res.data?.data?.balance);
       if (userInfo && gymId) {
         try {
-          await api.post(`/ws/chatRooms?userId=${userInfo.id}&gymId=${gymId}`);
+          // 1. 유저 정보 가져오기
+          let userId = userInfo?.id ?? userInfo?.userId;
+          let userType = userInfo?.userRole;
+          if (!userId || !userType) {
+            const res = await api.get('/users/me');
+            userId = res.data?.data?.id ?? res.data?.data?.userId;
+            userType = res.data?.data?.userRole;
+          }
+          // 2. 채팅방 목록 조회
+          const resRooms = await api.get(`/ws/chatRooms?userId=${userId}&userType=${userType}`);
+          const chatRooms = Array.isArray(resRooms.data?.data) ? resRooms.data.data : [];
+          const existRoom = chatRooms.find(room => String(room.userId) === String(userId) && String(room.gymId) === String(gymId));
+          if (existRoom) {
+            // 이미 있으면 그 방으로 이동
+            navigate(`/chat/${existRoom.chatRoomId}`);
+          } else {
+            // 없으면 새로 생성
+            const createRes = await api.post(`/ws/chatRooms?userId=${userId}&gymId=${gymId}`);
+            const chatRoomId = createRes.data.data.chatRoomId;
+            navigate(`/chat/${chatRoomId}`);
+          }
         } catch {
           alert('채팅방 자동 생성에 실패했습니다.');
         }

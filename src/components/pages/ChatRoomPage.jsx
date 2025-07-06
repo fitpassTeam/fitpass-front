@@ -60,6 +60,23 @@ export default function ChatRoomPage() {
   // 렌더링 부분에서 로딩 체크
   const isLoading = !userInfo || !chatRoomInfo || (userInfo.userRole === 'OWNER' && !myGyms);
 
+  // 내 userId를 안전하게 가져오기
+  const myUserId = userInfo?.id ?? userInfo?.userId;
+
+  // 읽음 처리 함수
+  const markMessagesAsRead = async () => {
+    if (!chatRoomId || !userInfo) return;
+    try {
+      const receiverType = userInfo.userRole === 'OWNER' ? 'GYM' : 'USER';
+      await api.post(`/ws/chatRooms/${chatRoomId}/read?receiverType=${receiverType}`);
+      console.log('메시지 읽음 처리 완료');
+      // 읽음 처리 후 채팅방 목록 새로고침 이벤트 발생
+      window.dispatchEvent(new Event('refreshChatRooms'));
+    } catch (error) {
+      console.error('메시지 읽음 처리 실패:', error);
+    }
+  };
+
   // 1. 과거 메시지 불러오기 (새로고침/입장 시)
   useEffect(() => {
     if (!chatRoomId) return;
@@ -69,12 +86,14 @@ export default function ChatRoomPage() {
         const messages = Array.isArray(res.data?.data) ? res.data.data : [];
         console.log('과거 메시지 조회 결과:', messages);
         setMessages(messages);
+        // 과거 메시지 로드 후 읽음 처리
+        markMessagesAsRead();
       })
       .catch((error) => {
         console.error('과거 메시지 조회 실패:', error);
         setMessages([]);
       });
-  }, [chatRoomId]);
+  }, [chatRoomId, userInfo]);
 
   // 내 gym 정보(오너만)
   const myGym = userInfo?.userRole === 'OWNER'
@@ -148,6 +167,8 @@ export default function ChatRoomPage() {
           const parsedMessage = JSON.parse(message.body);
           console.log('📝 파싱된 메시지:', parsedMessage);
           setMessages(prev => [...prev, parsedMessage]);
+          // 새 메시지 수신 시 읽음 처리
+          markMessagesAsRead();
         }
       });
     };
@@ -168,12 +189,26 @@ export default function ChatRoomPage() {
     return () => {
       console.log('🧹 WebSocket 연결 정리');
       client.deactivate();
+      // 컴포넌트 언마운트 시 읽음 처리
+      markMessagesAsRead();
     };
   }, [wsUrl, chatRoomId, userInfo]);
 
   useEffect(() => {
     console.log('chatRoomInfo:', chatRoomInfo);
   }, [chatRoomInfo]);
+
+  // 페이지를 벗어날 때 읽음 처리
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      markMessagesAsRead();
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [chatRoomId, userInfo]);
 
   const sendMessage = () => {
     if (
@@ -185,7 +220,7 @@ export default function ChatRoomPage() {
       (userInfo.userRole !== 'OWNER' || myGym)
     ) {
       // 오너의 경우 체육관 ID를 senderId로 사용
-      const senderId = userInfo.userRole === 'OWNER' ? (myGym?.id ?? myGym?.gymId ?? chatRoomInfo.gymId) : userInfo.id;
+      const senderId = userInfo.userRole === 'OWNER' ? (myGym?.id ?? myGym?.gymId ?? chatRoomInfo.gymId) : myUserId;
       const receiverId = userInfo.userRole === 'OWNER' ? chatRoomInfo.userId : chatRoomInfo.gymId;
       
       console.log('메시지 전송 - senderId:', senderId, 'receiverId:', receiverId, 'senderType:', userInfo.userRole === 'OWNER' ? 'GYM' : 'USER');
@@ -230,10 +265,10 @@ export default function ChatRoomPage() {
       });
       return isMyMessage;
     } else {
-      const isMyMessage = msg.senderType === 'USER' && String(msg.senderId) === String(userInfo?.id);
+      const isMyMessage = msg.senderType === 'USER' && String(msg.senderId) === String(myUserId);
       console.log('유저 메시지 판별:', {
         msgSenderId: msg.senderId,
-        userId: userInfo?.id,
+        userId: myUserId,
         isMyMessage: isMyMessage
       });
       return isMyMessage;

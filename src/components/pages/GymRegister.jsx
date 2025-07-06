@@ -35,14 +35,15 @@ function GymRegister() {
     detailAddress: '',
     openTime: '',
     closeTime: '',
-    gymImage: [],
+    gymImage: [], // S3 URL 배열
     summary: '',
   });
-  const [imageUrls, setImageUrls] = useState([]);
+  const [imgPreviews, setImgPreviews] = useState([]); // 미리보기용
   const [error, setError] = useState('');
   const [mode, setMode] = useState('register'); // 'register' | 'edit' | 'delete'
   const [myGyms, setMyGyms] = useState([]);
   const [selectedGym, setSelectedGym] = useState(null);
+  const [oldImages, setOldImages] = useState([]); // DB에 저장된 기존 이미지 S3 URL 배열
   const navigate = useNavigate();
 
   // 체육관 목록 불러오기 (수정/삭제 모두 내 체육관만)
@@ -77,12 +78,14 @@ function GymRegister() {
         gymImage: selectedGym.gymImage || [],
         summary: selectedGym.summary || '',
       });
-      setImageUrls(selectedGym.gymImage || []);
+      setImgPreviews(selectedGym.gymImage || []);
+      setOldImages(selectedGym.gymImage || []); // 기존 이미지 배열 저장
     } else if (mode === 'register') {
       setForm({
         name: '', number: '', content: '', city: '', district: '', detailAddress: '', openTime: '', closeTime: '', gymImage: [], summary: ''
       });
-      setImageUrls([]);
+      setImgPreviews([]);
+      setOldImages([]);
       setSelectedGym(null);
     }
   }, [mode, selectedGym]);
@@ -96,41 +99,50 @@ function GymRegister() {
     );
   }
 
-  // 이미지 업로드 핸들러 (여러 장, 누적 미리보기)
+  // presigned url 방식 이미지 업로드 (여러 장, 프론트에서 S3 직접 업로드)
   const handleImageChange = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
-    const formData = new FormData();
-    files.forEach(file => formData.append('images', file));
-    try {
-      // 여러 장 업로드 API 호출
-      const res = await api.post(`/images/multi`, formData);
-      const data = res.data;
-      if (data.statusCode === 200 && Array.isArray(data.data)) {
-        setImageUrls(prev => [...prev, ...data.data]);
-        setForm(prev => ({ ...prev, gymImage: [...prev.gymImage, ...data.data] }));
-      } else {
-        alert('이미지 업로드 실패');
+    // 미리보기 먼저 추가
+    const previews = files.map(file => URL.createObjectURL(file));
+    setImgPreviews(prev => [...prev, ...previews]);
+    // S3 업로드
+    for (const file of files) {
+      try {
+        const res = await api.get('/images/presigned-url', {
+          params: { filename: file.name, contentType: file.type }
+        });
+        const { presignedUrl, fileName } = res.data.data;
+        await fetch(presignedUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': file.type },
+          body: file,
+        });
+        const s3Url = `https://fit-pass-1.s3.ap-northeast-2.amazonaws.com/${fileName}`;
+        setForm(prev => ({ ...prev, gymImage: [...prev.gymImage, s3Url] }));
+      } catch (err) {
+        alert('이미지 업로드 중 오류 발생');
       }
-    } catch (err) {
-      alert('이미지 업로드 중 오류 발생');
     }
   };
 
-  // 이미지 삭제 핸들러 (수정 모드에서만)
-  const handleImageDelete = async (url) => {
-    if (!window.confirm('이 이미지를 삭제하시겠습니까?')) return;
-    try {
-      const res = await api.delete(`/images?images=${encodeURIComponent(url)}`);
-      if (res.status === 200) {
-        setImageUrls(prev => prev.filter(img => img !== url));
-        setForm(prev => ({ ...prev, gymImage: prev.gymImage.filter(img => img !== url) }));
-      } else {
-        alert('이미지 삭제 실패');
+  // 이미지 삭제 핸들러 (수정 모드: 기존/새 이미지 구분)
+  const handleImageDelete = async (idx) => {
+    const url = form.gymImage[idx];
+    // 기존 이미지라면 서버에 삭제 요청
+    if (oldImages.includes(url)) {
+      if (!window.confirm('이 이미지를 삭제하시겠습니까?')) return;
+      try {
+        await api.delete('/images', { params: { images: url } });
+        setOldImages(prev => prev.filter(img => img !== url));
+      } catch {
+        alert('이미지 삭제 중 오류 발생');
+        return;
       }
-    } catch {
-      alert('이미지 삭제 중 오류 발생');
     }
+    // 프론트 상태에서 삭제(공통)
+    setImgPreviews(prev => prev.filter((_, i) => i !== idx));
+    setForm(prev => ({ ...prev, gymImage: prev.gymImage.filter((_, i) => i !== idx) }));
   };
 
   const handleChange = (e) => {
@@ -209,14 +221,27 @@ function GymRegister() {
   };
 
   return (
-    <div className="max-w-xl mx-auto bg-white/90 p-10 rounded-2xl shadow-2xl mt-12 flex flex-col items-center">
-      <h1 className="text-3xl font-extrabold mb-6 text-center bg-gradient-to-r from-blue-500 to-purple-500 text-transparent bg-clip-text drop-shadow">
-        체육관 관리
-      </h1>
-      <div className="flex gap-2 mb-6">
-        <button type="button" className={`px-4 py-2 rounded font-bold ${mode === 'register' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`} onClick={() => setMode('register')}>등록</button>
-        <button type="button" className={`px-4 py-2 rounded font-bold ${mode === 'edit' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`} onClick={() => setMode('edit')}>수정</button>
-        <button type="button" className={`px-4 py-2 rounded font-bold ${mode === 'delete' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`} onClick={() => setMode('delete')}>삭제</button>
+    <div className="max-w-3xl mx-auto mt-10 p-6 bg-white rounded-2xl shadow-xl">
+      <h1 className="text-2xl font-bold mb-6 text-center">체육관 관리</h1>
+      <div className="flex gap-4 justify-center mb-8">
+        <button
+          className={`px-6 py-2 rounded-full font-bold text-lg shadow transition border-2 ${mode === 'register' ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-blue-500 border-blue-200 hover:bg-blue-50'}`}
+          onClick={() => setMode('register')}
+        >
+          체육관 등록
+        </button>
+        <button
+          className={`px-6 py-2 rounded-full font-bold text-lg shadow transition border-2 ${mode === 'edit' ? 'bg-purple-500 text-white border-purple-500' : 'bg-white text-purple-500 border-purple-200 hover:bg-purple-50'}`}
+          onClick={() => setMode('edit')}
+        >
+          체육관 수정
+        </button>
+        <button
+          className={`px-6 py-2 rounded-full font-bold text-lg shadow transition border-2 ${mode === 'delete' ? 'bg-red-500 text-white border-red-500' : 'bg-white text-red-500 border-red-200 hover:bg-red-50'}`}
+          onClick={() => setMode('delete')}
+        >
+          체육관 삭제
+        </button>
       </div>
       {mode === 'delete' || mode === 'edit' ? (
         <>
@@ -269,10 +294,12 @@ function GymRegister() {
                 placeholder="체육관 설명"
                 value={form.content}
                 onChange={handleChange}
-                className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 transition-all outline-none resize-none"
-                rows={3}
+                className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 outline-none resize-none"
+                maxLength={1000}
+                rows={5}
                 required
               />
+              <div className="text-right text-xs text-gray-400 mt-1">{form.content.length}/1000자</div>
               <div className="flex gap-2">
                 <div className="w-1/2">
                   <Select
@@ -323,16 +350,17 @@ function GymRegister() {
                   required
                 />
               </div>
-              <input
-                type="text"
+              <textarea
                 name="summary"
                 placeholder="상태메시지/한줄소개 (예: 맛있는 체육관)"
                 value={form.summary || ''}
                 onChange={handleChange}
-                className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 outline-none"
-                maxLength={50}
+                className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 outline-none resize-none"
+                maxLength={300}
+                rows={3}
                 required
               />
+              <div className="text-right text-xs text-gray-400 mt-1">{form.summary.length}/300자</div>
               <div>
                 <label className="block font-bold mb-2">사진 업로드 (여러 장 가능, 첫 번째가 대표)</label>
                 <input
@@ -343,19 +371,18 @@ function GymRegister() {
                   className="w-full"
                 />
                 <div className="flex gap-2 mt-2 flex-wrap">
-                  {imageUrls.map((url, idx) => (
-                    <div key={idx} className="relative inline-block">
+                  {imgPreviews.map((url, idx) => (
+                    <div key={url} className="relative inline-block">
                       <img
                         src={url}
-                        alt={url ? `미리보기${idx + 1}` : '이미지 없음'}
-                        className={`w-20 h-20 object-cover rounded-lg border-2 ${idx === 0 ? 'border-blue-500' : 'border-gray-200'}`}
-                        title={idx === 0 ? '대표사진' : undefined}
+                        alt={`미리보기${idx + 1}`}
+                        className="w-20 h-20 object-cover rounded-lg border-2"
                         onError={e => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/80?text=No+Image'; }}
                       />
                       <button
                         type="button"
                         className="absolute top-0 right-0 bg-white bg-opacity-80 rounded-full p-1 text-xs text-red-500 hover:bg-red-100 border border-red-300"
-                        onClick={() => handleImageDelete(url)}
+                        onClick={() => handleImageDelete(idx)}
                         style={{ transform: 'translate(40%,-40%)' }}
                       >
                         ×
@@ -394,10 +421,12 @@ function GymRegister() {
             placeholder="체육관 설명"
             value={form.content}
             onChange={handleChange}
-            className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 transition-all outline-none resize-none"
-            rows={3}
+            className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 outline-none resize-none"
+            maxLength={1000}
+            rows={5}
             required
           />
+          <div className="text-right text-xs text-gray-400 mt-1">{form.content.length}/1000자</div>
           <div className="flex gap-2">
             <div className="w-1/2">
               <Select
@@ -448,16 +477,17 @@ function GymRegister() {
               required
             />
           </div>
-          <input
-            type="text"
+          <textarea
             name="summary"
             placeholder="상태메시지/한줄소개 (예: 맛있는 체육관)"
             value={form.summary || ''}
             onChange={handleChange}
-            className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 outline-none"
-            maxLength={50}
+            className="w-full border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-3 outline-none resize-none"
+            maxLength={300}
+            rows={3}
             required
           />
+          <div className="text-right text-xs text-gray-400 mt-1">{form.summary.length}/300자</div>
           <div>
             <label className="block font-bold mb-2">사진 업로드 (여러 장 가능, 첫 번째가 대표)</label>
             <input
@@ -468,19 +498,18 @@ function GymRegister() {
               className="w-full"
             />
             <div className="flex gap-2 mt-2 flex-wrap">
-              {imageUrls.map((url, idx) => (
-                <div key={idx} className="relative inline-block">
+              {imgPreviews.map((url, idx) => (
+                <div key={url} className="relative inline-block">
                   <img
                     src={url}
-                    alt={url ? `미리보기${idx + 1}` : '이미지 없음'}
-                    className={`w-20 h-20 object-cover rounded-lg border-2 ${idx === 0 ? 'border-blue-500' : 'border-gray-200'}`}
-                    title={idx === 0 ? '대표사진' : undefined}
+                    alt={`미리보기${idx + 1}`}
+                    className="w-20 h-20 object-cover rounded-lg border-2"
                     onError={e => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/80?text=No+Image'; }}
                   />
                   <button
                     type="button"
                     className="absolute top-0 right-0 bg-white bg-opacity-80 rounded-full p-1 text-xs text-red-500 hover:bg-red-100 border border-red-300"
-                    onClick={() => handleImageDelete(url)}
+                    onClick={() => handleImageDelete(idx)}
                     style={{ transform: 'translate(40%,-40%)' }}
                   >
                     ×

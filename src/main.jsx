@@ -21,6 +21,7 @@ import MembershipManagement from './components/pages/MembershipManagement';
 import Reservation from './components/pages/Reservation';
 import ReservationManagement from './components/pages/ReservationManagement';
 import ChatRoomPage from './components/pages/ChatRoomPage';
+import PostManagement from './components/pages/PostManagement';
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ const router = createBrowserRouter([
       { path: 'reservation', element: <Reservation /> },
       { path: 'reservation-management', element: <ReservationManagement /> },
       { path: 'chat/:chatRoomId', element: <ChatRoomPage /> },
+      { path: 'post-management', element: <PostManagement /> },
       // {
       //   path: '/fitness-goals/{fitnessGoalId}/daily-records',
       //   element: <GoalDetail />,
