@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { checkPassword } from '../../api/http';
+import { checkPassword, api } from '../../api/http';
 
 function PasswordCheckPage() {
   const [password, setPassword] = useState('');
@@ -14,6 +14,13 @@ function PasswordCheckPage() {
     if (!token) {
       navigate('/login');
     }
+    // 소셜 로그인 사용자는 비밀번호 확인 생략
+    api.get('/users/me').then(res => {
+      const user = res.data?.data;
+      if (user?.authProvider && user.authProvider !== 'LOCAL') {
+        navigate('/edit-profile');
+      }
+    });
   }, [navigate]);
 
   const handleSubmit = async (e) => {

@@ -14,6 +14,7 @@ function EditProfilePage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [imgUploading, setImgUploading] = useState(false);
+  const [isSocialUser, setIsSocialUser] = useState(false);
   const fileInputRef = useRef();
   const navigate = useNavigate();
 
@@ -22,6 +23,10 @@ function EditProfilePage() {
     api.get('/users/me')
       .then(res => {
         const user = res.data?.data;
+        // 소셜 로그인 사용자인지 확인 (authProvider가 있으면 소셜 사용자)
+        const socialUser = user?.authProvider && user.authProvider !== 'LOCAL';
+        setIsSocialUser(socialUser);
+        
         setForm(prev => ({
           ...prev,
           name: user?.name || '',
@@ -175,19 +180,28 @@ function EditProfilePage() {
             required
           />
         </div>
-        {/* 비밀번호(선택 입력) */}
-        <div className="flex flex-col gap-2">
-          <label className="font-bold">새 비밀번호 (선택)</label>
-          <input
-            type="password"
-            name="password"
-            value={form.password}
-            onChange={handleChange}
-            className="border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-2 outline-none"
-            placeholder="변경 시에만 입력"
-            autoComplete="new-password"
-          />
-        </div>
+        {/* 비밀번호(선택 입력) - 소셜 로그인 사용자는 숨김 */}
+        {!isSocialUser && (
+          <div className="flex flex-col gap-2">
+            <label className="font-bold">새 비밀번호 (선택)</label>
+            <input
+              type="password"
+              name="password"
+              value={form.password}
+              onChange={handleChange}
+              className="border-2 border-blue-200 focus:border-blue-500 rounded-lg px-4 py-2 outline-none"
+              placeholder="변경 시에만 입력"
+              autoComplete="new-password"
+            />
+          </div>
+        )}
+        {/* 소셜 로그인 사용자 안내 메시지 */}
+        {isSocialUser && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
+            <p className="font-semibold mb-1">소셜 로그인 사용자</p>
+            <p>비밀번호는 소셜 계정에서 관리됩니다.</p>
+          </div>
+        )}
         {error && <div className="text-red-500 text-sm text-center">{error}</div>}
         <button
           type="submit"
