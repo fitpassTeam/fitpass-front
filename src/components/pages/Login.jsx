@@ -32,8 +32,15 @@ function Login() {
                 alert('로그인 응답에 accessToken이 없습니다.');
             }
         },
-        onError: () => {
-            alert('로그인에 실패하였습니다.');
+        onError: (error) => {
+            const msg = error?.response?.data?.message;
+            if (msg === '비밀번호가 일치하지 않습니다.' || msg === '인증이 필요합니다.') {
+                alert('비밀번호가 일치하지 않습니다.');
+            } else if (msg) {
+                alert(msg);
+            } else {
+                alert('로그인에 실패하였습니다.');
+            }
         }
     });
 
