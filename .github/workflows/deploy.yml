@@ -1,0 +1,37 @@
+
+name: Deploy
+
+on:
+  push:
+    branches: ['main']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: pandoc/latex
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
+
+      - name: Install mustache (to update the date)
+        run: apk add ruby && gem install mustache
+
+      - name: Run build script
+        run: sh ./build.sh
+
+      - name: Push to another repository
+        id: push_directory
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.AUTO_ACTIONS }}  
+        with:
+          source-directory: 'output'
+          destination-github-username: hosung77
+          destination-repository-name: fitpass-front
+          user-email: ${{ secrets.USER_NAME }}                                  # 👈 유저이름도 명시하면 좋음
+          commit-message: ${{ github.event.head_commit.message }}"
+          target-branch: main
+
+      - name: Check exported variable (optional)
+        run: echo $DESTINATION_CLONED_DIRECTORY
