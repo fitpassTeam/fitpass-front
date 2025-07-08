@@ -261,11 +261,12 @@ function TrainerRegister() {
           />
           <textarea
             name="experience"
-            placeholder="경력 (예: 10년, 전 국가대표 등)"
+            placeholder="경력 (예: 10년, 전 국가대표 등, 1000자 이내)"
             value={form.experience}
             onChange={e => setForm(prev => ({ ...prev, experience: e.target.value }))}
             className="w-full border-2 border-pink-200 focus:border-pink-500 rounded-lg px-4 py-3 transition-all outline-none resize-none"
             rows={2}
+            maxLength={1000}
             required
           />
           <textarea
