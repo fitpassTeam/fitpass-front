@@ -270,12 +270,12 @@ function TrainerRegister() {
           />
           <textarea
             name="content"
-            placeholder="트레이너 소개 (200자 이내)"
+            placeholder="트레이너 소개 (1000자 이내)"
             value={form.content}
             onChange={e => setForm(prev => ({ ...prev, content: e.target.value }))}
             className="w-full border-2 border-pink-200 focus:border-pink-500 rounded-lg px-4 py-3 transition-all outline-none resize-none"
             rows={3}
-            maxLength={200}
+            maxLength={1000}
             required
           />
           {/* 이미지 업로드/미리보기 */}

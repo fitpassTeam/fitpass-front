@@ -40,14 +40,11 @@ function PasswordCheckPage() {
       console.error('Password check error:', error);
       console.error('Error response:', error.response);
       
-      if (error.response?.status === 401) {
-        if (error.response?.data?.message) {
-          setError(error.response.data.message);
-        } else {
-          setError('인증에 실패했습니다. 다시 로그인해주세요.');
-        }
-        
-        // 401 에러 시 토큰 삭제하고 로그인 페이지로 리다이렉트
+      if (error.response?.status === 422) {
+        setError('비밀번호가 일치하지 않습니다.');
+        // 로그아웃/이동 없음
+      } else if (error.response?.status === 401) {
+        setError('인증이 만료되었습니다. 다시 로그인 해주세요.');
         localStorage.removeItem('token');
         setTimeout(() => {
           navigate('/login');

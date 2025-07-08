@@ -101,8 +101,8 @@ function EditProfilePage() {
       address: form.address,
       phone: form.phone,
       userImage: form.imageUrl ?? '',
+      password: form.password ?? ''
     };
-    if (form.password) patchData.password = form.password;
     console.log('PATCH 요청 직전 patchData:', patchData);
     try {
       await api.patch('/users/me', patchData);

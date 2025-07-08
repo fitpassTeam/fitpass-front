@@ -728,8 +728,9 @@ function GymDetail() {
       {/* 이미지 원본 모달 */}
       {imgModal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={() => setImgModal({ open: false, images: [], idx: 0 })}>
+          {/* X 버튼을 모달 전체 기준으로 고정 */}
+          <button className="fixed top-8 right-8 text-white text-3xl font-bold z-50 hover:text-pink-300 transition-colors" onClick={() => setImgModal({ open: false, images: [], idx: 0 })} aria-label="닫기">×</button>
           <div className="relative max-w-3xl w-full flex flex-col items-center" onClick={e => e.stopPropagation()}>
-            <button className="absolute top-2 right-2 text-white text-3xl font-bold z-10" onClick={() => setImgModal({ open: false, images: [], idx: 0 })}>×</button>
             <img
               src={imgModal.images[imgModal.idx]}
               alt="원본이미지"
@@ -738,8 +739,8 @@ function GymDetail() {
             />
             {imgModal.images.length > 1 && (
               <div className="flex gap-4 mt-4">
-                <button onClick={() => setImgModal(m => ({ ...m, idx: (m.idx - 1 + m.images.length) % m.images.length }))} className="text-white text-2xl px-4 py-2 bg-black/30 rounded-full">{'<'}</button>
-                <button onClick={() => setImgModal(m => ({ ...m, idx: (m.idx + 1) % m.images.length }))} className="text-white text-2xl px-4 py-2 bg-black/30 rounded-full">{'>'}</button>
+                <button onClick={() => setImgModal(m => ({ ...m, idx: (m.idx - 1 + m.images.length) % m.images.length }))} className="text-white text-2xl px-4 py-2 bg-black/30 rounded-full hover:bg-black/50 transition-colors">{'<'}</button>
+                <button onClick={() => setImgModal(m => ({ ...m, idx: (m.idx + 1) % m.images.length }))} className="text-white text-2xl px-4 py-2 bg-black/30 rounded-full hover:bg-black/50 transition-colors">{'>'}</button>
               </div>
             )}
           </div>
