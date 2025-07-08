@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../api/http';
-import { createPost, getGeneralPosts, updatePost } from '../../api/posts';
+import { createPost, getGeneralPosts, getNoticePosts, updatePost } from '../../api/posts';
 import { getMyGyms } from '../../api/gyms';
 
 export default function PostManagement() {
@@ -78,9 +78,13 @@ export default function PostManagement() {
   // 삭제 탭: 체육관 선택 시 게시글 목록 불러오기
   useEffect(() => {
     if (activeTab === 'delete' && deleteGym) {
-      getGeneralPosts(deleteGym.value).then(res => {
-        const posts = Array.isArray(res.data?.content) ? res.data.content : [];
-        setDeletePosts(posts);
+      Promise.all([
+        getGeneralPosts(deleteGym.value),
+        getNoticePosts(deleteGym.value)
+      ]).then(([generalRes, noticeRes]) => {
+        const generalPosts = Array.isArray(generalRes.data?.content) ? generalRes.data.content : [];
+        const noticePosts = Array.isArray(noticeRes.data) ? noticeRes.data : [];
+        setDeletePosts([...generalPosts, ...noticePosts]);
       });
     } else {
       setDeletePosts([]);
@@ -275,10 +279,14 @@ export default function PostManagement() {
       await api.delete(`/gyms/${deleteGym.value}/posts/${selectedDeletePost.postId}`);
       alert('게시글이 삭제되었습니다!');
       setSelectedDeletePost(null);
-      // 목록 새로고침
-      getGeneralPosts(deleteGym.value).then(res => {
-        const posts = Array.isArray(res.data?.content) ? res.data.content : [];
-        setDeletePosts(posts);
+      // 삭제 후 바로 리스트 새로고침 (일반+공지)
+      Promise.all([
+        getGeneralPosts(deleteGym.value),
+        getNoticePosts(deleteGym.value)
+      ]).then(([generalRes, noticeRes]) => {
+        const generalPosts = Array.isArray(generalRes.data?.content) ? generalRes.data.content : [];
+        const noticePosts = Array.isArray(noticeRes.data) ? noticeRes.data : [];
+        setDeletePosts([...generalPosts, ...noticePosts]);
       });
     } catch (err) {
       setDeleteError('게시글 삭제에 실패했습니다.');
