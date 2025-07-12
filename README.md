@@ -18,6 +18,23 @@ VITE_API_BASE_URL=http://localhost:8080
 
 ---
 
+🛠️ 기술스택 (Tech Stack)
+
+React
+SPA(싱글 페이지 애플리케이션) UI 개발
+Vite
+빠른 번들링 및 개발 서버
+JavaScript (ES6+)
+Tailwind CSS
+유틸리티 기반 CSS 프레임워크 (설정 파일 존재)
+Axios
+REST API 통신 (src/api/\*.js)
+Context API
+글로벌 상태 관리 (src/context/NotificationContext.jsx)
+HTML5, CSS3
+
+---
+
 ## 🏃‍♂️ 로컬 개발 실행
 
 ```bash
